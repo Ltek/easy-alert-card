@@ -1,6 +1,7 @@
 {
-  "name": "AlertTicker Card",
-  "filename": "alert-ticker-card.js",
+  "name": "Easy Alert Card (Ltek)",
+  "filename": "easy-alert-card.js",
   "render_readme": true,
+  "zip_release": false,
   "homeassistant": "2023.6.0"
 }

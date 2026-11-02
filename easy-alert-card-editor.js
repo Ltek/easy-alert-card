@@ -1,19 +1,20 @@
 /**
- * AlertTicker Card Editor v1.3.17
- * Visual editor for the AlertTicker Card custom Lovelace component.
+ * Easy Alert Card editor (Ltek)
+ * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
+ * https://github.com/Ltek/easy-alert-card
  */
-
+// Version: v2026.11.02.0
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-// Must match the version in alert-ticker-card.js
-const CARD_VERSION = "1.3.17";
+// Must match the version in easy-alert-card.js
+const CARD_VERSION = "2026.11.02.0";
 
 // ---------------------------------------------------------------------------
-// Theme metadata — mirrors alert-ticker-card.js
+// Theme metadata — mirrors easy-alert-card.js
 // ---------------------------------------------------------------------------
 const THEME_META = {
   emergency:    { icon: "🚨", category: "critical" },
@@ -1787,6 +1788,7 @@ const ET = {
     hub_desc_alerts: "Manage alert conditions",
     hub_desc_allclear: "Message when no alerts are active",
     hub_star_github: "Star on GitHub",
+    hub_based_on: "Based on",
     hub_report_issue: "Report an issue",
     hub_welcome: "Welcome! Configure your card by selecting a section below.",
     clear_display_mode_label: "Display mode",
@@ -1863,7 +1865,7 @@ const ET = {
     card_border: "Show card border & name",
     card_border_help: "Adds the standard Home Assistant border around the card. When no alerts are active, shows a placeholder with the card name instead of hiding completely.",
     severity_border: "Show severity border",
-    severity_border_help: "Draws a 1px colored border around each alert matching its severity (critical/warning/info/OK). Turn off to keep badge/icon color coding without the border. Width is themeable via --atc-severity-border-width.",
+    severity_border_help: "Draws a 1px colored border around each alert matching its severity (critical/warning/info/OK). Turn off to keep badge/icon color coding without the border. Width is themeable via --eac-severity-border-width.",
     card_background: "Custom background / transparency",
     card_background_help: "Enable to use the HA theme variable (--ha-card-background). Enter a custom CSS value to use a fixed color, e.g. rgba(0,0,0,0.5).",
     show_snooze_bar: "Show snooze reactivation bar 💤",
@@ -1964,6 +1966,15 @@ const ET = {
     themes_none_builtin: "No built-in themes.",
     reset_confirm: "{what}?",
     reset_yes: "Yes, reset",
+    import_title: "Import from AlertTicker Card",
+    import_help: "Paste the YAML of an AlertTicker Card (type: custom:alert-ticker-card) — the card on its own, or a whole view or dashboard that contains one. It replaces this card's config; filters, priorities and look settings are converted the same way as when you open an old card.",
+    import_found: "Found an AlertTicker Card with {n} alert(s).",
+    import_not_found: "No AlertTicker Card config found in what you pasted.",
+    import_invalid: "That isn't valid YAML.",
+    import_button: "Import",
+    import_confirm: "Replace this card's config with the imported one?",
+    import_yes: "Yes, replace",
+    import_done: "Imported. Check the alerts, then Save.",
     save_now: "Save",
     save_now_saving: "Saving…",
     save_now_saved: "Saved",
@@ -6341,7 +6352,7 @@ async function _atcScanNotifySources(hass, onProgress) {
   onProgress?.();
 }
 
-class AlertTickerCardEditor extends LitElement {
+class EasyAlertCardEditor extends LitElement {
   static get properties() {
     return {
       _config: { type: Object },
@@ -6371,7 +6382,7 @@ class AlertTickerCardEditor extends LitElement {
     this._haUsersFetching = false;
     // Onboarding: highlight the "Add from template" dropdown until first use
     this._templatesHintSeen = false;
-    try { this._templatesHintSeen = !!localStorage.getItem("atc-tpl-hint-seen"); } catch (_) {}
+    try { this._templatesHintSeen = !!localStorage.getItem("eac-tpl-hint-seen"); } catch (_) {}
   }
 
 
@@ -6441,9 +6452,9 @@ class AlertTickerCardEditor extends LitElement {
         div.classList.add("section-divider--toggle");
         div.classList.toggle("section-divider--open", !!open);
         for (let el = div.nextElementSibling; el && !el.classList.contains("section-divider"); el = el.nextElementSibling) {
-          if (el.classList.contains("atc-sec-frame")) continue;
-          el.classList.toggle("atc-sec-hidden", !open);
-          el.classList.toggle("atc-sec-body", !!open);
+          if (el.classList.contains("eac-sec-frame")) continue;
+          el.classList.toggle("eac-sec-hidden", !open);
+          el.classList.toggle("eac-sec-body", !!open);
         }
       });
     });
@@ -6508,17 +6519,17 @@ class AlertTickerCardEditor extends LitElement {
     const root = this.shadowRoot;
     if (!root?.querySelectorAll) return;
     root.querySelectorAll(".alert-form").forEach((form) => {
-      form.querySelectorAll(":scope > .atc-sec-frame").forEach((f) => f.remove());
+      form.querySelectorAll(":scope > .eac-sec-frame").forEach((f) => f.remove());
       const box = form.getBoundingClientRect?.();
       if (!box) return;
       form.querySelectorAll(".section-divider--open").forEach((div) => {
         let last = div;
         for (let el = div.nextElementSibling; el && !el.classList.contains("section-divider"); el = el.nextElementSibling) {
-          if (!el.classList.contains("atc-sec-hidden") && !el.classList.contains("atc-sec-frame") && el.getClientRects?.().length) last = el;
+          if (!el.classList.contains("eac-sec-hidden") && !el.classList.contains("eac-sec-frame") && el.getClientRects?.().length) last = el;
         }
         const top = div.getBoundingClientRect(), bottom = last.getBoundingClientRect();
         const frame = document.createElement("div");
-        frame.className = "atc-sec-frame";
+        frame.className = "eac-sec-frame";
         frame.style.top = `${top.top - box.top - 2}px`;
         frame.style.height = `${bottom.bottom - top.top + 10}px`;
         frame.style.left = `${top.left - box.left - 6}px`;
@@ -6573,7 +6584,7 @@ class AlertTickerCardEditor extends LitElement {
     // Old alerts: quick-filter fields, extra conditions and time_range become rules
     // (see _atcMigrateConfig in the card). Saved on the next save; the card shows the
     // same alerts either way.
-    const migrate = globalThis.__alertTickerShared?.migrateConfig;
+    const migrate = globalThis.__easyAlertShared?.migrateConfig;
     if (migrate && config) {
       const res = migrate(config);
       if (res.migrated.length || res.priorityMoved || res.aliasMoved) {
@@ -6595,7 +6606,7 @@ class AlertTickerCardEditor extends LitElement {
     // for one render cycle but they must not end up saved in the user's YAML.
     // Leaving them in causes the JSON dedup in _fireConfig to malfunction.
     // Look settings live on themes: per-alert ones and theme_styles become custom themes.
-    const migLook = globalThis.__alertTickerShared?.migrateLook;
+    const migLook = globalThis.__easyAlertShared?.migrateLook;
     if (migLook) {
       const r = migLook(config);
       if (r.config !== config) {
@@ -6747,14 +6758,15 @@ class AlertTickerCardEditor extends LitElement {
     const ruleSetCount = this._ruleSets().length;
     return html`
       <div class="hub-header">
-        <span class="hub-title">Alert Ticker Card</span>
+        <span class="hub-title">Easy Alert Card</span>
         <span class="hub-version">v${CARD_VERSION}</span>
       </div>
 
-      <details class="atc-subpanel atc-quickstart">
+      <details class="eac-subpanel eac-quickstart">
         <summary>🚀 ${this._t("quick_start_title")}</summary>
-        <div class="atc-subpanel-body helper-text atc-qs-body">${this._t("quick_start_body").split("\n").map((l) => html`<p>${l}</p>`)}</div>
+        <div class="eac-subpanel-body helper-text eac-qs-body">${this._t("quick_start_body").split("\n").map((l) => html`<p>${l}</p>`)}</div>
       </details>
+      ${this._renderImportPanel()}
 
       <!-- Alerts — full width -->
       <button class="hub-tile hub-tile--wide" @click="${() => this._sectionChanged("alerts")}">
@@ -6820,18 +6832,65 @@ class AlertTickerCardEditor extends LitElement {
       </div>
 
       <div class="hub-footer">
-        <span class="hub-footer-love">Made with ❤️ by <strong>djdevil</strong></span>
-        <a class="hub-footer-star" href="https://github.com/djdevil/AlertTicker-Card" target="_blank" rel="noopener">
+        <a class="hub-footer-star" href="https://github.com/Ltek/easy-alert-card" target="_blank" rel="noopener">
           ⭐ ${this._t("hub_star_github")}
         </a>
         <span class="hub-footer-links">
-          <a class="hub-footer-link" href="https://github.com/djdevil/AlertTicker-Card/issues" target="_blank" rel="noopener">🐛 ${this._t("hub_report_issue")}</a>
-          <a class="hub-footer-bmc" href="https://www.buymeacoffee.com/divil17f" target="_blank" rel="noopener">
-            <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" />
-          </a>
+          <a class="hub-footer-link" href="https://github.com/Ltek/easy-alert-card/issues" target="_blank" rel="noopener">🐛 ${this._t("hub_report_issue")}</a>
         </span>
+        <span class="hub-footer-love">${this._t("hub_based_on")} <a class="hub-footer-link" href="https://github.com/djdevil/AlertTicker-Card" target="_blank" rel="noopener">AlertTicker Card</a> — djdevil</span>
       </div>
     `;
+  }
+
+  /**
+   * Finds an AlertTicker Card config in what the user pasted: the card itself, a card
+   * without a type that has alerts, or one inside a view / stack / dashboard.
+   */
+  _findAlertTickerConfig(v, depth = 0) {
+    if (!v || typeof v !== "object" || depth > 12) return null;
+    if (Array.isArray(v)) { for (const x of v) { const r = this._findAlertTickerConfig(x, depth + 1); if (r) return r; } return null; }
+    if (v.type === "custom:alert-ticker-card" || v.type === "custom:easy-alert-card") return v;
+    if (!v.type && Array.isArray(v.alerts)) return v;
+    for (const x of Object.values(v)) { const r = this._findAlertTickerConfig(x, depth + 1); if (r) return r; }
+    return null;
+  }
+
+  /** Replaces this card's config with the imported one (same conversions as on open). */
+  _applyImport(found) {
+    this.setConfig({ ...found, type: "custom:easy-alert-card" });
+    const cfg = { ...this._config };
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: cfg }, bubbles: true, composed: true }));
+    this._import = { done: true };
+    this._activeSection = null;
+    this.requestUpdate();
+  }
+
+  _renderImportPanel() {
+    const st = this._import || (this._import = {});
+    const found = st.value ? this._findAlertTickerConfig(st.value) : null;
+    const n = found ? (found.alerts || []).length : 0;
+    return html`
+      <details class="eac-subpanel eac-import" ?open="${!!st.open}" @toggle="${(e) => { st.open = e.target.open; }}">
+        <summary>📥 ${this._t("import_title")}</summary>
+        <div class="eac-subpanel-body">
+          <div class="helper-text">${this._t("import_help")}</div>
+          <ha-yaml-editor .hass="${this._hass}" .defaultValue="${st.value || ""}"
+            @value-changed="${(e) => { st.value = e.detail?.isValid === false ? null : e.detail.value; st.invalid = e.detail?.isValid === false; st.confirm = false; st.done = false; this.requestUpdate(); }}"></ha-yaml-editor>
+          ${st.done ? html`<div class="rs-notice">✓ ${this._t("import_done")}</div>` : ""}
+          ${st.invalid ? html`<div class="rs-warning">⚠ ${this._t("import_invalid")}</div>`
+            : st.value && !found ? html`<div class="rs-warning">⚠ ${this._t("import_not_found")}</div>`
+            : found ? html`<div class="helper-text">${this._t("import_found").replace("{n}", n)}</div>` : ""}
+          ${st.confirm ? html`
+            <span class="eac-confirm">
+              <span>${this._t("import_confirm")}</span>
+              <button class="eac-btn-reset eac-btn-reset--danger" @click="${() => this._applyImport(found)}">${this._t("import_yes")}</button>
+              <button class="eac-btn-reset" @click="${() => { st.confirm = false; this.requestUpdate(); }}">${this._t("reset_cancel")}</button>
+            </span>` : html`
+            <button class="eac-btn-reset" ?disabled="${!found}" @click="${() => { st.confirm = true; this.requestUpdate(); }}">
+              <ha-icon icon="mdi:import"></ha-icon> ${this._t("import_button")}</button>`}
+        </div>
+      </details>`;
   }
 
   _renderSectionHeader(titleKey) {
@@ -6885,7 +6944,7 @@ class AlertTickerCardEditor extends LitElement {
   _renderSaveNow() {
     if (!this._canSaveNow()) return "";
     const st = this._saveState;
-    return html`<button class="atc-save-now ${st ? "is-" + st : ""}" ?disabled="${st === "saving"}"
+    return html`<button class="eac-save-now ${st ? "is-" + st : ""}" ?disabled="${st === "saving"}"
       title="${st === "error" ? this._saveError : this._t("save_now_help")}"
       @click="${(e) => { e.stopPropagation(); this._saveNow(); }}">
       <ha-icon icon="${st === "saved" ? "mdi:check" : st === "error" ? "mdi:alert-circle-outline" : "mdi:content-save-outline"}"></ha-icon>
@@ -7006,7 +7065,7 @@ class AlertTickerCardEditor extends LitElement {
     const lang = this._lang || "en";
     const msgs = DEFAULT_MSG[lang] || DEFAULT_MSG.en;
     const own = (this._config.alerts || []).find((a) => a?.theme === theme);
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     let entity = own && typeof own.entity === "string" ? own.entity : "";
     if (own && !entity && shared) {
       const [att] = shared.attachRuleSets([own], this._ruleSets());
@@ -7045,14 +7104,14 @@ class AlertTickerCardEditor extends LitElement {
       .filter(([, , items]) => items.length);
     return html`
       <div class="helper-text">${this._t("themes_help")}</div>
-      <div class="atc-seg atc-seg--4" role="tablist" aria-label="${this._t("themes_show")}">
-        ${["used", "custom", "presets", "builtin"].map((f) => html`<button role="tab" class="atc-seg-btn ${filter === f ? "is-on" : ""}"
+      <div class="eac-seg eac-seg--4" role="tablist" aria-label="${this._t("themes_show")}">
+        ${["used", "custom", "presets", "builtin"].map((f) => html`<button role="tab" class="eac-seg-btn ${filter === f ? "is-on" : ""}"
           aria-selected="${filter === f}" @click="${() => { this._themeFilter = f; this.requestUpdate(); }}">${this._t("themes_filter_" + f)}</button>`)}
       </div>
       ${this._themePreview ? html`<div class="rs-notice">🔍 ${this._t("theme_previewing").replace("{name}", nameOf(this._themePreview))}</div>` : ""}
       ${groups.map(([cat, emoji, items]) => html`
         <div class="rs-section-title">${cat === "timer" ? `⏱️ ${this._t("timer_theme_category")}` : this._groupLabel(cat, emoji)}</div>
-        <div class="atc-theme-list">${items.map((v) => this._renderThemeRow(v, nameOf(v), used.get(v) || 0, !!customs[v]))}</div>`)}
+        <div class="eac-theme-list">${items.map((v) => this._renderThemeRow(v, nameOf(v), used.get(v) || 0, !!customs[v]))}</div>`)}
       ${groups.length ? "" : html`<div class="helper-text">${this._t(filter === "custom" ? "themes_mine_none" : "themes_none_" + filter)}</div>`}
     `;
   }
@@ -7070,17 +7129,17 @@ class AlertTickerCardEditor extends LitElement {
   /** A Reset button that asks first: click → "Reset …? Yes / Cancel" in place. */
   _resetButton(key, label, onConfirm, disabled = false) {
     if (this._confirmReset === key) return html`
-      <span class="atc-confirm">
+      <span class="eac-confirm">
         <span>${this._t("reset_confirm").replace("{what}", label)}</span>
-        <button class="atc-btn-reset atc-btn-reset--danger" @click="${(e) => { e.stopPropagation(); this._confirmReset = null; onConfirm(); this.requestUpdate(); }}">${this._t("reset_yes")}</button>
-        <button class="atc-btn-reset" @click="${(e) => { e.stopPropagation(); this._confirmReset = null; this.requestUpdate(); }}">${this._t("reset_cancel")}</button>
+        <button class="eac-btn-reset eac-btn-reset--danger" @click="${(e) => { e.stopPropagation(); this._confirmReset = null; onConfirm(); this.requestUpdate(); }}">${this._t("reset_yes")}</button>
+        <button class="eac-btn-reset" @click="${(e) => { e.stopPropagation(); this._confirmReset = null; this.requestUpdate(); }}">${this._t("reset_cancel")}</button>
       </span>`;
-    return html`<button class="atc-btn-reset" ?disabled="${disabled}"
+    return html`<button class="eac-btn-reset" ?disabled="${disabled}"
       @click="${(e) => { e.stopPropagation(); this._confirmReset = key; this.requestUpdate(); }}"><ha-icon icon="mdi:restore"></ha-icon> ${label}</button>`;
   }
 
   _deleteButtonFor(title, onClick) {
-    return html`<button class="btn-icon atc-act atc-act--del" title="${title}"
+    return html`<button class="btn-icon eac-act eac-act--del" title="${title}"
       @click="${(e) => { e.stopPropagation(); onClick(); }}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
   }
 
@@ -7088,20 +7147,20 @@ class AlertTickerCardEditor extends LitElement {
     const open = this._themeOpen === theme;
     const previewing = this._themePreview === theme;
     return html`
-      <div class="atc-row ${open ? "is-open" : ""}">
+      <div class="eac-row ${open ? "is-open" : ""}">
         <div class="alert-item" @click="${() => { this._themeOpen = open ? null : theme; if (!open) this._setThemePreview(theme); else if (previewing) this._setThemePreview(null); this.requestUpdate(); }}">
           <div class="alert-summary-text">
             <div class="alert-entity-label">${name}${this._presetThemes().has(theme) ? this._scopeChips(this._themeScopes(theme)) : ""}</div>
-            <div class="alert-msg-label">${isCustom ? html`<span class="atc-customized">${this._t("theme_based_on").replace("{name}", this._themeLabel({ value: this._config.custom_themes[theme].base }).replace(/\s*\(.*\)$/, ""))}</span> · ` : ""}${uses ? this._t("theme_used_by").replace("{n}", uses) : this._t("theme_unused")}</div>
+            <div class="alert-msg-label">${isCustom ? html`<span class="eac-customized">${this._t("theme_based_on").replace("{name}", this._themeLabel({ value: this._config.custom_themes[theme].base }).replace(/\s*\(.*\)$/, ""))}</span> · ` : ""}${uses ? this._t("theme_used_by").replace("{n}", uses) : this._t("theme_unused")}</div>
           </div>
           <div class="alert-actions">
-            ${this._iconButton("mdi:magnify", this._t(previewing ? "templates_preview_off" : "theme_preview"), () => { this._setThemePreview(previewing ? null : theme); this.requestUpdate(); }, false, previewing ? "atc-act--on" : "")}
+            ${this._iconButton("mdi:magnify", this._t(previewing ? "templates_preview_off" : "theme_preview"), () => { this._setThemePreview(previewing ? null : theme); this.requestUpdate(); }, false, previewing ? "eac-act--on" : "")}
             ${isCustom ? html`
               ${this._iconButton("mdi:content-copy", this._t("theme_duplicate"), () => this._duplicateTheme(theme))}
               ${this._deleteButtonFor(this._t("theme_delete").replace("{n}", uses), () => this._deleteCustomTheme(theme))}`
               : this._iconButton("mdi:pencil-plus-outline", this._t("theme_duplicate_edit"), () => this._duplicateTheme(theme))}
           </div>
-          <ha-icon class="atc-theme-edit ${open ? "is-open" : ""}" icon="${isCustom ? (open ? "mdi:pencil" : "mdi:pencil-outline") : (open ? "mdi:eye" : "mdi:eye-outline")}" title="${this._t(isCustom ? "theme_edit" : "theme_view")}"></ha-icon>
+          <ha-icon class="eac-theme-edit ${open ? "is-open" : ""}" icon="${isCustom ? (open ? "mdi:pencil" : "mdi:pencil-outline") : (open ? "mdi:eye" : "mdi:eye-outline")}" title="${this._t(isCustom ? "theme_edit" : "theme_view")}"></ha-icon>
         </div>
         ${open ? this._renderThemePanel(theme) : ""}
       </div>`;
@@ -7133,15 +7192,15 @@ class AlertTickerCardEditor extends LitElement {
     const isDefault = !Array.isArray(as.items) && !as.state;
     const add = (v) => { if (v && !items.includes(v)) this._setThemeItems(theme, [...items, v]); };
     return html`
-      <div class="atc-preset-chips">
+      <div class="eac-preset-chips">
         ${items.length ? items.map((id) => html`<span class="rs-chip rs-chip--scope ${byId[id] ? "" : "rs-chip--own"}"
             title="${byId[id] ? this._t("preset_item_builtin_title").replace("{name}", presetName(byId[id].key)) : this._t("preset_item_own_title")}">
             ${chipLabel(id)}<button class="rs-chip-x" title="${this._t("remove")}"
             @click="${() => this._setThemeItems(theme, items.filter((x) => x !== id))}">✕</button></span>`)
           : html`<span class="helper-text">${this._t("theme_preset_empty")}</span>`}
       </div>
-      <div class="atc-frow">
-        <select class="native-select atc-frow-select" @change="${(e) => { const v = e.target.value; e.target.value = ""; add(v); }}">
+      <div class="eac-frow">
+        <select class="native-select eac-frow-select" @change="${(e) => { const v = e.target.value; e.target.value = ""; add(v); }}">
           <option value="">${this._t("theme_preset_add")}</option>
           <optgroup label="${this._t("theme_preset_group_builtin")}">
             ${bi.filter((it) => !items.includes(it.id)).map((it) => html`<option value="${it.id}">${scopeLabel(it.scope)} · ${presetName(it.key)}${assign[it.id] ? ` (${this._t("theme_preset_now_on").replace("{theme}", themeName(assign[it.id]))})` : ` (${this._t("theme_preset_removed")})`}</option>`)}
@@ -7170,21 +7229,21 @@ class AlertTickerCardEditor extends LitElement {
     const ts = this._themeStyle(theme);
     const cfg = this._config;
     const set = (k) => (v) => this._setThemeStyle(theme, { [k]: v });
-    const native = !!globalThis.__alertTickerShared?.nativeFlashThemes?.has(_tbase(theme));
+    const native = !!globalThis.__easyAlertShared?.nativeFlashThemes?.has(_tbase(theme));
     const animOff = (ts.disable_animation ?? false) || !!cfg.disable_animation;
     const custom = this._isCustomTheme(theme);
     if (!custom) return html`
-      <div class="atc-theme-panel">
+      <div class="eac-theme-panel">
         <div class="rs-section-title">${this._t("theme_preset_title")}</div>
         ${this._renderPresetDomains(theme, ts)}
         <div class="rs-section-title">${this._t("theme_look_title")}</div>
         <div class="helper-text">${this._t("theme_builtin_readonly")}</div>
-        <button class="atc-btn-reset" @click="${() => this._duplicateTheme(theme)}">
+        <button class="eac-btn-reset" @click="${() => this._duplicateTheme(theme)}">
           <ha-icon icon="mdi:pencil-plus-outline"></ha-icon> ${this._t("theme_duplicate_edit")}</button>
       </div>`;
     const im = this._iconMode(ts);
     return html`
-      <div class="atc-theme-panel">
+      <div class="eac-theme-panel">
         <ha-input .label="${this._t("theme_name")}" .value="${ts.name || ""}"
           @change="${(e) => this._setThemeStyle(theme, { name: e.target.value.trim() || ts.name })}"></ha-input>
         <div class="helper-text">${this._t("theme_based_on").replace("{name}", this._themeLabel({ value: ts.base }))}</div>
@@ -7193,9 +7252,9 @@ class AlertTickerCardEditor extends LitElement {
         ${this._renderPresetDomains(theme, ts)}
 
         <div class="rs-section-title">${this._t("theme_icon")}</div>
-        <div class="atc-frow">
-          <span class="atc-frow-label">${this._t("icon_source")}</span>
-          <select class="native-select atc-frow-select" @change="${(e) => this._setThemeIconMode(theme, e.target.value)}">
+        <div class="eac-frow">
+          <span class="eac-frow-label">${this._t("icon_source")}</span>
+          <select class="native-select eac-frow-select" @change="${(e) => this._setThemeIconMode(theme, e.target.value)}">
             ${["theme", "emoji", "entity_icon", "ha", "picture", "image"].map((m) => html`<option value="${m}" ?selected="${im === m}">${this._t("icon_src_" + m)}</option>`)}
           </select>
         </div>
@@ -7276,15 +7335,15 @@ class AlertTickerCardEditor extends LitElement {
       voice: cfg.tts_enabled === false || cfg.push_notify_enabled === false,
     };
     const group = (id, icon, titleKey, content) => html`
-      <details class="atc-subpanel atc-gd" ?open="${open.has(id)}"
+      <details class="eac-subpanel eac-gd" ?open="${open.has(id)}"
         @toggle="${(e) => { if (e.target.open) open.add(id); else open.delete(id); }}">
         <summary>${icon} ${this._t(titleKey)}${MOD[id] ? html`<ha-icon class="sec-changed" icon="mdi:pencil" title="${this._t("theme_customized")}"></ha-icon>` : ""}</summary>
-        <div class="atc-subpanel-body">${content}</div>
+        <div class="eac-subpanel-body">${content}</div>
       </details>`;
     return html`
       ${this._renderSectionHeader("tab_general")}
       <div class="helper-text">${this._t("global_defaults_help")}</div>
-      <div class="atc-gd-list">
+      <div class="eac-gd-list">
         ${group("look", "🖼️", "layout_defaults_look", html`
       <div class="form-row">
         <div class="form-row-inline">
@@ -8023,14 +8082,14 @@ class AlertTickerCardEditor extends LitElement {
     return html`
       <div class="rs-section-title" style="margin-top:12px">${this._t("overlay_alerts_title")}</div>
       <div class="helper-text">${this._t("overlay_alerts_help")}</div>
-      <div class="atc-ov-list">
+      <div class="eac-ov-list">
         ${alerts.map((a, i) => html`
-          <div class="atc-ov-row ${a.enabled === false ? "atc-row--off" : ""} ${a.overlay === false ? "atc-ov-row--hidden" : ""}">
+          <div class="eac-ov-row ${a.enabled === false ? "eac-row--off" : ""} ${a.overlay === false ? "eac-ov-row--hidden" : ""}">
             ${this._iconButton(a.overlay !== false ? "mdi:eye-outline" : "mdi:eye-off-outline",
               this._t(a.overlay !== false ? "overlay_row_hide" : "overlay_row_show"),
-              () => this._updateAlert(i, { overlay: a.overlay !== false ? false : undefined }), false, a.overlay !== false ? "atc-icon--on" : "")}
-            <span class="atc-ov-icon">${this._modeIcon(this._getAlertMode(i, a))}</span>
-            <span class="atc-ov-name">${a.name || `${this._t("alert_num")} ${i + 1}`}</span>
+              () => this._updateAlert(i, { overlay: a.overlay !== false ? false : undefined }), false, a.overlay !== false ? "eac-icon--on" : "")}
+            <span class="eac-ov-icon">${this._modeIcon(this._getAlertMode(i, a))}</span>
+            <span class="eac-ov-name">${a.name || `${this._t("alert_num")} ${i + 1}`}</span>
           </div>`)}
       </div>`;
   }
@@ -8174,7 +8233,7 @@ class AlertTickerCardEditor extends LitElement {
     if (!scopes.length) return "";
     const label = (x) => x.kind === "class" ? this._t("scope_class").replace("{v}", x.value)
       : x.kind === "notify" ? this._t("scope_notifications") : x.kind === "pick" ? this._t("scope_pick") : x.value;
-    return html`<span class="atc-scope-chips">${scopes.map((x) => html`<span class="rs-chip rs-chip--static rs-chip--scope"
+    return html`<span class="eac-scope-chips">${scopes.map((x) => html`<span class="rs-chip rs-chip--static rs-chip--scope"
       title="${this._t("scope_title_" + x.kind)}">${label(x)}</span>`)}</span>`;
   }
 
@@ -8194,7 +8253,7 @@ class AlertTickerCardEditor extends LitElement {
   }
 
   _templateMatches(key) {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     const t = this._presets()[key];
     if (!this._hass || !shared?.migrateConfig || !t) return null;
     const alerts = t.alerts.map(({ priority, ...a }) => a);
@@ -8253,7 +8312,7 @@ class AlertTickerCardEditor extends LitElement {
     const lang = this._lang || "en";
     const toast = this._templateToast && Date.now() - this._templateToast.at < 6000 ? this._templateToast : null;
     return html`
-      <div class="atc-row ${open ? "is-open" : ""} atc-tpl-panel">
+      <div class="eac-row ${open ? "is-open" : ""} eac-tpl-panel">
         <div class="alert-item" @click="${() => { this._templatesOpen = !open; if (open && this._tplPreview) this._toggleTemplatePreview(this._tplPreview); this._markTemplateHintSeen(); this.requestUpdate(); }}">
           <div class="alert-summary-text">
             <div class="alert-entity-label"><ha-icon class="rs-kind-icon" icon="mdi:shape-plus-outline"></ha-icon> ${this._t("templates_title")}</div>
@@ -8261,8 +8320,8 @@ class AlertTickerCardEditor extends LitElement {
           </div>
           <span class="filter-count-chevron">${open ? "▲" : "▼"}</span>
         </div>
-        ${toast ? html`<div class="rs-notice atc-tpl-toast">✓ ${this._t("templates_added").replace("{name}", toast.name)}</div>` : ""}
-        ${open ? html`<div class="atc-tpl-list">
+        ${toast ? html`<div class="rs-notice eac-tpl-toast">✓ ${this._t("templates_added").replace("{name}", toast.name)}</div>` : ""}
+        ${open ? html`<div class="eac-tpl-list">
           ${this._tplPreview && this._presets()[this._tplPreview] ? html`<div class="rs-notice">🔍 ${this._t("templates_previewing")
             .replace("{name}", this._presets()[this._tplPreview].nameByLang[lang] || this._presets()[this._tplPreview].nameByLang.en)}</div>` : ""}
           ${Object.entries(this._presets())
@@ -8273,8 +8332,8 @@ class AlertTickerCardEditor extends LitElement {
             const listKey = `tpl_${key}`;
             const listOpen = this._filterPreviewOpen.has(listKey);
             return html`
-              <div class="atc-tpl-row ${m.possible === 0 && !m.needs && !m.notify ? "atc-tpl-row--none" : ""}">
-                <div class="atc-tpl-main">
+              <div class="eac-tpl-row ${m.possible === 0 && !m.needs && !m.notify ? "eac-tpl-row--none" : ""}">
+                <div class="eac-tpl-main">
                   <span class="alert-icon-badge">${t.icon}</span>
                   <div class="alert-summary-text">
                     <div class="alert-entity-label">${t.nameByLang[lang] || t.nameByLang.en}${this._scopeChips(this._presetScopes(t))}${t.userPreset ? html` <span class="rs-chip rs-chip--static">${this._t("preset_from_theme")}</span>` : ""}</div>
@@ -8289,7 +8348,7 @@ class AlertTickerCardEditor extends LitElement {
                   </div>
                   <div class="alert-actions">
                     ${this._iconButton("mdi:magnify", this._t(this._tplPreview === key ? "templates_preview_off" : "templates_preview"),
-                      () => this._toggleTemplatePreview(key), false, this._tplPreview === key ? "atc-act--on" : "")}
+                      () => this._toggleTemplatePreview(key), false, this._tplPreview === key ? "eac-act--on" : "")}
                     ${!m.needs ? this._iconButton("mdi:plus", this._t("templates_create"), () => this._addFromTemplate(key, { edit: false })) : ""}
                     ${this._iconButton("mdi:pencil-plus-outline", this._t("templates_create_edit"), () => this._addFromTemplate(key, { edit: true }))}
                   </div>
@@ -8322,7 +8381,7 @@ class AlertTickerCardEditor extends LitElement {
       : mode === "hours" ? (v === 1 ? this._t("history_1_hour") : this._t("history_n_days").replace("{n}", v / 24))
       : this._t("history_n_alerts").replace("{n}", v);
     let stored = [];
-    try { stored = JSON.parse(localStorage.getItem(globalThis.__alertTickerShared?.historyKey?.(cfg) || "") || "[]"); } catch (_) {}
+    try { stored = JSON.parse(localStorage.getItem(globalThis.__easyAlertShared?.historyKey?.(cfg) || "") || "[]"); } catch (_) {}
     const open = !!this._historyViewOpen;
     const fmt = (ts) => { try { return new Date(ts).toLocaleString(this._lang || undefined); } catch (_) { return String(ts); } };
     return html`
@@ -8349,10 +8408,10 @@ class AlertTickerCardEditor extends LitElement {
         </select>` : html`<span></span>`}
       </div>
       <div class="helper-text">${this._t("history_show_help")}</div>
-      <details class="atc-subpanel" ?open="${open}" @toggle="${(e) => { this._historyViewOpen = e.target.open; this.requestUpdate(); }}">
+      <details class="eac-subpanel" ?open="${open}" @toggle="${(e) => { this._historyViewOpen = e.target.open; this.requestUpdate(); }}">
         <summary>${this._t("history_view").replace("{n}", stored.length)}</summary>
-        ${open ? html`<div class="atc-subpanel-body">
-          ${stored.length ? html`<div class="filter-entity-list atc-hist-list">
+        ${open ? html`<div class="eac-subpanel-body">
+          ${stored.length ? html`<div class="filter-entity-list eac-hist-list">
             ${stored.slice(0, 1000).map((e) => html`<div class="filter-entity-row">
               <span class="filter-entity-name" title="${e.message}">${e.icon || ""} ${e.message}</span>
               <span class="filter-entity-id" title="${e.entity || ""}">${e.entityName || e.entity || ""}</span>
@@ -8432,7 +8491,7 @@ class AlertTickerCardEditor extends LitElement {
 
     const total = (this._config.alerts || []).length;
     return html`
-      <div class="atc-row ${isEditing ? "is-open" : ""} ${alert.enabled === false ? "atc-row--off" : ""} ${this._dragOver === index ? "atc-row--drop" : ""}"
+      <div class="eac-row ${isEditing ? "is-open" : ""} ${alert.enabled === false ? "eac-row--off" : ""} ${this._dragOver === index ? "eac-row--drop" : ""}"
            @dragover="${(e) => { if (this._dragFrom == null) return; e.preventDefault(); if (this._dragOver !== index) { this._dragOver = index; this.requestUpdate(); } }}"
            @dragleave="${() => { if (this._dragOver === index) { this._dragOver = null; this.requestUpdate(); } }}"
            @drop="${(e) => { e.preventDefault(); const from = this._dragFrom; this._dragFrom = null; this._dragOver = null; if (from != null) this._moveAlert(from, index); }}">
@@ -8444,21 +8503,21 @@ class AlertTickerCardEditor extends LitElement {
           ${this._alertChips(alert)}
         </div>
         <div class="alert-actions">
-          <span class="alert-icon-badge atc-theme-icon" title="${this._t("alert_theme")}">${icon}</span>
+          <span class="alert-icon-badge eac-theme-icon" title="${this._t("alert_theme")}">${icon}</span>
           ${this._overlayButton(alert, index)}
           ${this._iconButton(alert.enabled === false ? "mdi:eye-off-outline" : "mdi:eye-outline",
             this._t(alert.enabled === false ? "alert_enable" : "alert_disable"),
             () => this._updateAlert(index, { enabled: alert.enabled === false ? undefined : false }), false,
-            alert.enabled === false ? "atc-icon--off" : "")}
+            alert.enabled === false ? "eac-icon--off" : "")}
           ${this._iconButton("mdi:content-copy", this._t("alert_duplicate"), () => this._duplicateAlert(index))}
           ${this._deleteButton(() => this._deleteAlert(index))}
         </div>
         <div class="alert-move-col">
-          <div class="atc-move-arrows">
+          <div class="eac-move-arrows">
             ${this._iconButton("mdi:chevron-up", this._t("move_up"), () => this._moveAlert(index, index - 1), index === 0)}
             ${this._iconButton("mdi:chevron-down", this._t("move_down"), () => this._moveAlert(index, index + 1), index === total - 1)}
           </div>
-          <span class="atc-drag" draggable="true" title="${this._t("drag_to_reorder")}"
+          <span class="eac-drag" draggable="true" title="${this._t("drag_to_reorder")}"
             @click="${(e) => e.stopPropagation()}"
             @dragstart="${(e) => { this._dragFrom = index; try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(index)); } catch (_) {} }}"
             @dragend="${() => { this._dragFrom = null; this._dragOver = null; this.requestUpdate(); }}"><ha-icon icon="mdi:drag-vertical"></ha-icon></span>
@@ -8477,7 +8536,7 @@ class AlertTickerCardEditor extends LitElement {
     if (index < 0 || index >= alerts.length) return "";
     const alert = alerts[index];
     return html`
-      <div class="atc-row-body">
+      <div class="eac-row-body">
         <div class="alert-form">
           <div class="sections-toolbar">
             <a href="#" class="rs-link" @click="${(e) => { e.preventDefault(); this._setAllSections(true); }}">${this._t("sections_expand_all")}</a>
@@ -8612,7 +8671,7 @@ class AlertTickerCardEditor extends LitElement {
                 ` : ""}
                 <!-- Line under the message (multi-entity alerts) -->
                 ${this._getAlertMode(index, alert) !== "entity" ? html`
-                  <div class="atc-check-row">
+                  <div class="eac-check-row">
                     <ha-formfield .label="${this._t(this._getAlertMode(index, alert) === "rs_notify" ? "show_notification_text" : "show_filter_name")}">
                       <ha-checkbox .checked="${alert.show_filter_name !== false}"
                         @change="${(e) => this._updateAlert(index, { show_filter_name: e.target.checked ? undefined : false })}"></ha-checkbox>
@@ -8633,7 +8692,7 @@ class AlertTickerCardEditor extends LitElement {
 
 
                 <!-- Look: comes from the theme (icon, colors, text, label, effects) -->
-                <div class="helper-text atc-look-note">🎨 ${this._t("alert_look_from_theme")}
+                <div class="helper-text eac-look-note">🎨 ${this._t("alert_look_from_theme")}
                   ${this._isCustomTheme(alert.theme)
                     ? html`<a href="#" @click="${(e) => { e.preventDefault(); this._openTheme(alert.theme); }}">${this._t("theme_edit_link")}</a>`
                     : html`<a href="#" @click="${(e) => { e.preventDefault(); const id = this._duplicateTheme(alert.theme || "emergency"); this._updateAlert(index, { theme: id }); this._activeSection = "layout"; }}">${this._t("theme_duplicate_link")}</a>`}
@@ -9295,9 +9354,9 @@ class AlertTickerCardEditor extends LitElement {
    * can never store them): see _atcConfigSig in the card. null = stop.
    */
   _publishPreview(alerts) {
-    const sig = globalThis.__alertTickerShared?.configSig;
-    globalThis.__atcEditorPreview = alerts && alerts.length && sig ? { sig: sig(this._config), alerts } : null;
-    window.dispatchEvent(new Event("atc-editor-preview"));
+    const sig = globalThis.__easyAlertShared?.configSig;
+    globalThis.__eacEditorPreview = alerts && alerts.length && sig ? { sig: sig(this._config), alerts } : null;
+    window.dispatchEvent(new Event("eac-editor-preview"));
   }
 
   _fireConfig(newConfig) {
@@ -9439,7 +9498,7 @@ class AlertTickerCardEditor extends LitElement {
   // Rule sets — reusable entity filters stored in the card-level `rule_sets:`
   // list and referenced from alerts with `rule_set: <id>`. The card evaluates
   // them; the editor only edits the list and previews matches with the card's
-  // own matcher (globalThis.__alertTickerShared).
+  // own matcher (globalThis.__easyAlertShared).
   // -------------------------------------------------------------------------
   _ruleSets() {
     return Array.isArray(this._config?.rule_sets) ? this._config.rule_sets : [];
@@ -9447,7 +9506,7 @@ class AlertTickerCardEditor extends LitElement {
 
   /** hass as the card sees it — including notifications when the config has a notification rule set. */
   _previewHass() {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     if (!this._hass || !shared?.hassFor || !shared.usesNotifications(this._config)) return this._hass;
     if (!this._notifyUnsub) this._notifyUnsub = shared.notifications.onChange(() => this.requestUpdate());
     return shared.hassFor(this._config, this._hass);
@@ -9457,10 +9516,10 @@ class AlertTickerCardEditor extends LitElement {
   _markEditorOpen(open) {
     if (open === !!this._countedOpen) return;
     this._countedOpen = open;
-    globalThis.__atcEditorsOpen = Math.max(0, (globalThis.__atcEditorsOpen || 0) + (open ? 1 : -1));
+    globalThis.__eacEditorsOpen = Math.max(0, (globalThis.__eacEditorsOpen || 0) + (open ? 1 : -1));
     // cards re-check test mode / previews on this event
-    if (!open && globalThis.__atcEditorPreview) this._publishPreview(null);
-    else window.dispatchEvent(new Event("atc-editor-preview"));
+    if (!open && globalThis.__eacEditorPreview) this._publishPreview(null);
+    else window.dispatchEvent(new Event("eac-editor-preview"));
   }
 
   disconnectedCallback() {
@@ -9503,16 +9562,16 @@ class AlertTickerCardEditor extends LitElement {
       else { onChange(v || undefined); this.requestUpdate(); }
     };
     return html`
-      <div class="atc-frow">
-        <span class="atc-frow-label">${label}</span>
-        <select class="native-select atc-frow-select" @change="${(e) => setMode(e.target.value)}">
+      <div class="eac-frow">
+        <span class="eac-frow-label">${label}</span>
+        <select class="native-select eac-frow-select" @change="${(e) => setMode(e.target.value)}">
           ${["default", "theme", "custom", "css"].map((m) => html`<option value="${m}" ?selected="${mode === m}">${this._t("color_mode_" + m)}${m === "default" && inherited ? ` (${this._t("inherited_theme")})` : ""}</option>`)}
         </select>
-        ${mode === "theme" ? html`<select class="native-select atc-frow-select" @change="${(e) => onChange(e.target.value)}">
+        ${mode === "theme" ? html`<select class="native-select eac-frow-select" @change="${(e) => onChange(e.target.value)}">
           ${VARS.map(([x, n]) => html`<option value="${x}" ?selected="${v === x}">${n}</option>`)}</select>` : ""}
         ${mode === "custom" ? html`<input type="color" class="icon-color-swatch" .value="${this._cssColorToHex(v) || "#ffffff"}"
           @input="${(e) => onChange(e.target.value)}" />` : ""}
-        ${mode === "css" ? html`<input type="text" class="atc-frow-text" .value="${v}" placeholder="tomato, rgba(…), var(--…)"
+        ${mode === "css" ? html`<input type="text" class="eac-frow-text" .value="${v}" placeholder="tomato, rgba(…), var(--…)"
           @change="${(e) => onChange(e.target.value.trim() || undefined)}" />` : ""}
       </div>`;
   }
@@ -9522,14 +9581,14 @@ class AlertTickerCardEditor extends LitElement {
     const on = Number(value) > 0;
     const fmt = (v) => unit === "×" ? `${Number(v).toFixed(1)}×` : `${v}${unit}`;
     return html`
-      <div class="atc-frow atc-frow--nowrap">
+      <div class="eac-frow eac-frow--nowrap">
         <ha-formfield .label="${label}">
           <ha-checkbox .checked="${on}" @change="${(e) => onChange(e.target.checked ? (Number(inherited) > 0 ? Number(inherited) : def) : undefined)}"></ha-checkbox>
         </ha-formfield>
-        ${on ? html`<input type="range" class="atc-slider" min="${min}" max="${max}" step="${step}" .value="${String(value)}"
+        ${on ? html`<input type="range" class="eac-slider" min="${min}" max="${max}" step="${step}" .value="${String(value)}"
             @input="${(e) => onChange(Number(e.target.value))}" />
-          <span class="atc-slider-val">${fmt(value)}</span>`
-          : Number(inherited) > 0 ? html`<span class="atc-inherit">${this._t("inherited_value").replace("{v}", fmt(inherited))}</span>` : ""}
+          <span class="eac-slider-val">${fmt(value)}</span>`
+          : Number(inherited) > 0 ? html`<span class="eac-inherit">${this._t("inherited_value").replace("{v}", fmt(inherited))}</span>` : ""}
       </div>`;
   }
 
@@ -9538,17 +9597,17 @@ class AlertTickerCardEditor extends LitElement {
     const on = value ?? !!inheritedOn;
     const changed = value !== undefined && value !== !!inheritedOn;
     return html`
-      <div class="atc-frow">
+      <div class="eac-frow">
         <ha-formfield .label="${label}">
           <ha-checkbox .checked="${on}" @change="${(e) => onChange(e.target.checked === !!inheritedOn ? undefined : e.target.checked)}"></ha-checkbox>
         </ha-formfield>
-        <span class="atc-inherit ${changed ? "atc-inherit--changed" : ""}">${this._t("tri_default_note").replace("{v}", this._t(inheritedOn ? "tri_on" : "tri_off"))}</span>
+        <span class="eac-inherit ${changed ? "eac-inherit--changed" : ""}">${this._t("tri_default_note").replace("{v}", this._t(inheritedOn ? "tri_on" : "tri_off"))}</span>
       </div>`;
   }
 
 
   _iconButton(icon, title, onClick, disabled = false, extraClass = "") {
-    return html`<button class="btn-icon atc-act ${extraClass}" title="${title}" ?disabled="${disabled}"
+    return html`<button class="btn-icon eac-act ${extraClass}" title="${title}" ?disabled="${disabled}"
       @click="${(e) => { e.stopPropagation(); if (!disabled) onClick(); }}"><ha-icon icon="${icon}"></ha-icon></button>`;
   }
 
@@ -9561,7 +9620,7 @@ class AlertTickerCardEditor extends LitElement {
       : `${this._t(on ? "alert_overlay_on" : "alert_overlay_off")}${multi && on ? ` — ${this._t("alert_overlay_each_match")}` : ""}`;
     return this._iconButton(on ? "mdi:message-alert-outline" : "mdi:message-off-outline", title,
       () => this._updateAlert(index, { overlay: on ? false : undefined }), !mode,
-      !mode ? "atc-icon--unavailable" : on ? "atc-icon--on" : "atc-icon--off");
+      !mode ? "eac-icon--unavailable" : on ? "eac-icon--on" : "eac-icon--off");
   }
 
   /** Moves an alert from one position to another (arrows and drag-and-drop). */
@@ -9609,12 +9668,12 @@ class AlertTickerCardEditor extends LitElement {
 
   /** Delete button: trash icon only, neutral, red on hover (design system). */
   _deleteButton(onClick) {
-    return html`<button class="btn-icon atc-del" title="${this._t("delete")}"
+    return html`<button class="btn-icon eac-del" title="${this._t("delete")}"
       @click="${(e) => { e.stopPropagation(); onClick(); }}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`;
   }
 
   _isNotificationSet(rs) {
-    return !!globalThis.__alertTickerShared?.isNotificationSet?.(rs);
+    return !!globalThis.__easyAlertShared?.isNotificationSet?.(rs);
   }
 
   _entityName(eid) {
@@ -9622,7 +9681,7 @@ class AlertTickerCardEditor extends LitElement {
   }
 
   _destName(id) {
-    return globalThis.__alertTickerShared?.destinationName?.(this._hass, id) || id;
+    return globalThis.__easyAlertShared?.destinationName?.(this._hass, id) || id;
   }
 
   /** Adds or removes one value of a list key (notification_source / notification_destination). */
@@ -9900,7 +9959,7 @@ class AlertTickerCardEditor extends LitElement {
     const open = this._rsEditing === si;
     const used = this._ruleSetUsage(rs.id);
     return html`
-      <div class="atc-row ${open ? "is-open" : ""}">
+      <div class="eac-row ${open ? "is-open" : ""}">
       <div class="alert-item ${open ? "is-editing" : ""}" @click="${() => { this._rsEditing = open ? -1 : si; }}">
         <div class="alert-summary-text">
           <div class="alert-entity-label" title="${this._t(this._isNotificationSet(rs) ? "ruleset_watch_notifications" : "ruleset_watch_entities")}">${this._kindIcon(this._isNotificationSet(rs))} ${rs.name || rs.id}</div>
@@ -9911,7 +9970,7 @@ class AlertTickerCardEditor extends LitElement {
             const open = this._rsExport !== si;
             this._rsExport = open ? si : -1;
             // frozen when opened, so re-renders (HA updates every few seconds) don't reset it
-            this._rsExportText = open ? JSON.stringify({ rule_set: rs, diagnostics: globalThis.__alertTickerShared?.ruleSetDiagnostics?.(this._previewHass(), rs) }, null, 2) : "";
+            this._rsExportText = open ? JSON.stringify({ rule_set: rs, diagnostics: globalThis.__easyAlertShared?.ruleSetDiagnostics?.(this._previewHass(), rs) }, null, 2) : "";
             this._rsEditing = si; this.requestUpdate();
           })}
           ${this._iconButton("mdi:content-copy", this._t("ruleset_duplicate"), () => this._duplicateRuleSet(si))}
@@ -9931,7 +9990,7 @@ class AlertTickerCardEditor extends LitElement {
     const addGroup = (mode) => this._updateRsGroups(si, (gs) =>
       gs.unshift({ mode, match: mode === "exclude" ? "any" : "all", rules: [this._newRule(isN ? "notification_text" : undefined)] }));
     return html`
-      <div class="atc-row-body">
+      <div class="eac-row-body">
         <div class="alert-form">
           ${this._rsExport === si ? this._renderRsExport(rs) : ""}
           ${this._renderRsUsage(rs, si)}
@@ -9982,7 +10041,7 @@ class AlertTickerCardEditor extends LitElement {
 
   /** Troubleshooting export: the rule set + per-rule match counts, as JSON, with Copy. */
   _renderRsExport(rs) {
-    if (!this._rsExportText) this._rsExportText = JSON.stringify({ rule_set: rs, diagnostics: globalThis.__alertTickerShared?.ruleSetDiagnostics?.(this._previewHass(), rs) }, null, 2);
+    if (!this._rsExportText) this._rsExportText = JSON.stringify({ rule_set: rs, diagnostics: globalThis.__easyAlertShared?.ruleSetDiagnostics?.(this._previewHass(), rs) }, null, 2);
     const text = this._rsExportText;
     return html`
       <div class="rs-notify-box">
@@ -10099,7 +10158,7 @@ class AlertTickerCardEditor extends LitElement {
     const rs = this._rsDef(si);
     let cur = Array.isArray(rs[key]) ? rs[key].slice() : [];
     if (on && value === "mobile_app") {
-      const d = globalThis.__alertTickerShared?.notifyDestinations?.(this._hass) || { mobile: [] };
+      const d = globalThis.__easyAlertShared?.notifyDestinations?.(this._hass) || { mobile: [] };
       const phones = new Set(d.mobile.map((x) => x.value));
       cur = cur.filter((v) => !phones.has(v) && !/^notify\.mobile_app_/.test(v));
     }
@@ -10144,7 +10203,7 @@ class AlertTickerCardEditor extends LitElement {
 
   /** Source picker: chosen automations/scripts on top, then "seen sending" and the scan list. */
   _renderSourcePicker(rs, si) {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     const picked = Array.isArray(rs.notification_source) ? rs.notification_source : [];
     const seen = (shared?.notifications?.observedSenders?.() || []).filter((s) => this._hass?.states?.[s.entity_id]);
     const scanned = ATC_SCAN.status === "done" && !this._rsScanHidden ? ATC_SCAN.results : [];
@@ -10193,7 +10252,7 @@ class AlertTickerCardEditor extends LitElement {
    */
   _renderDestinationPicker(rs, si) {
     const key = "notification_destination";
-    const d = globalThis.__alertTickerShared?.notifyDestinations?.(this._hass) || { mobile: [], services: [], entities: [] };
+    const d = globalThis.__easyAlertShared?.notifyDestinations?.(this._hass) || { mobile: [], services: [], entities: [] };
     const picked = Array.isArray(rs[key]) ? rs[key] : [];
     const all = !this._rsOnly(si, key);
     const allMobile = all || picked.includes("mobile_app");
@@ -10225,7 +10284,7 @@ class AlertTickerCardEditor extends LitElement {
 
   /** Notifications seen so far — click "Use" to build the set from one. Doubles as a live log. */
   _renderRsRecent(si) {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     const h = this._previewHass();
     const items = Object.values(h?.states || {})
       .filter((es) => shared?.notifications?.isNotification(es.entity_id, es))
@@ -10293,7 +10352,7 @@ class AlertTickerCardEditor extends LitElement {
     const inline = typeof si === "string";
     const fields = isN ? RS_NOTIFICATION_FIELDS
       : inline ? RS_INLINE_FIELDS
-      : (globalThis.__alertTickerShared?.ruleFields || Object.keys(RS_FIELD_OPS).filter((f) => !RS_NOTIFICATION_FIELDS.includes(f)));
+      : (globalThis.__easyAlertShared?.ruleFields || Object.keys(RS_FIELD_OPS).filter((f) => !RS_NOTIFICATION_FIELDS.includes(f)));
     const ops = [...(RS_FIELD_OPS[r.field] || [])];
     if (r.op && !ops.includes(r.op)) ops.push(r.op); // YAML-written op outside the UI list
     return html`
@@ -10308,7 +10367,7 @@ class AlertTickerCardEditor extends LitElement {
           ${this._iconButton(r.enabled === false ? "mdi:eye-off-outline" : "mdi:eye-outline",
             this._t(r.enabled === false ? "rule_enable" : "rule_disable"),
             () => this._rsRuleChanged(si, gi, ri, { enabled: r.enabled === false ? undefined : false }), false,
-            r.enabled === false ? "atc-icon--off" : "")}
+            r.enabled === false ? "eac-icon--off" : "")}
           <button class="btn-icon btn-delete" title="${this._t("delete")}"
             @click="${() => this._updateRsGroups(si, (gs) => gs[gi].rules.splice(ri, 1))}">✕</button>
         </div>
@@ -10435,7 +10494,7 @@ class AlertTickerCardEditor extends LitElement {
    * plus "N active now", with an expandable list; active entities are marked.
    */
   _renderPossibleMatches(alert, index) {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     if (!this._hass || !shared?.possibleEntities) return "";
     const h = this._previewHass();
     const [resolved] = shared.attachRuleSets([alert], this._config?.rule_sets);
@@ -10501,7 +10560,7 @@ class AlertTickerCardEditor extends LitElement {
    * target `t` (a shared set being edited), entity rows toggle exclusion on click.
    */
   _renderRsPreview(def, key, t = null) {
-    const shared = globalThis.__alertTickerShared;
+    const shared = globalThis.__easyAlertShared;
     if (!this._hass || !shared || !def) return "";
     const isN = this._isNotificationSet(def);
     const exIdx = !isN && t != null ? this._rsPickExcludeIndex(def) : -1;
@@ -10689,7 +10748,7 @@ class AlertTickerCardEditor extends LitElement {
     this._markTemplateHintSeen(); // remove first-time glow if still on
 
     const currentAlerts = [...(this._config.alerts || [])];
-    const LOOK = globalThis.__alertTickerShared?.themeAlertKeys || [];
+    const LOOK = globalThis.__easyAlertShared?.themeAlertKeys || [];
     const newAlerts = template.alerts.map(({ priority, ...tplAlert }) => {
       const a = { ...tplAlert };
       for (const k of LOOK) delete a[k];   // the look comes from the theme
@@ -10719,7 +10778,7 @@ class AlertTickerCardEditor extends LitElement {
     const merged = [...currentAlerts.slice(0, firstNewIndex), ...newAlerts, ...currentAlerts.slice(firstNewIndex)];
     let nextConfig = this._withPresetRuleSets({ ...this._config, ...mergedCardCfg, alerts: merged }, template);
     // Template alerts use device_class filters: store them as shared rule sets, like every other rule.
-    const migrate = globalThis.__alertTickerShared?.migrateConfig;
+    const migrate = globalThis.__easyAlertShared?.migrateConfig;
     if (migrate) nextConfig = migrate(nextConfig).config;
     if (this._config.test_mode) nextConfig._preview_index = firstNewIndex;
     this._fireConfig(nextConfig);
@@ -10728,13 +10787,13 @@ class AlertTickerCardEditor extends LitElement {
   /**
    * Onboarding hint: highlight the "Add from template" dropdown the first
    * time the user opens the editor, until they interact with it once.
-   * Persisted in localStorage as `atc-tpl-hint-seen` so it appears exactly
+   * Persisted in localStorage as `eac-tpl-hint-seen` so it appears exactly
    * once per browser.
    */
   _markTemplateHintSeen() {
     if (this._templatesHintSeen) return;
     this._templatesHintSeen = true;
-    try { localStorage.setItem("atc-tpl-hint-seen", "1"); } catch (_) {}
+    try { localStorage.setItem("eac-tpl-hint-seen", "1"); } catch (_) {}
     this.requestUpdate();
   }
 
@@ -11080,10 +11139,10 @@ class AlertTickerCardEditor extends LitElement {
       // a subpanel inside a section (e.g. Group alerts → Group tap action)
       const changed = this._actionSet(alert[key]);
       return html`
-        <details class="atc-subpanel" ?open="${!!this._openSections?.has("action:" + key)}"
+        <details class="eac-subpanel" ?open="${!!this._openSections?.has("action:" + key)}"
           @toggle="${(e) => { const n = new Set(this._openSections || []); if (e.target.open) n.add("action:" + key); else n.delete("action:" + key); this._openSections = n; }}">
           <summary>${sectionLabel}${changed ? html`<ha-icon class="sec-changed" icon="mdi:pencil-circle" title="${this._t("section_changed")}"></ha-icon>` : ""}</summary>
-          <div class="atc-subpanel-body">${this._renderActionConfig(alert, index, key, null)}</div>
+          <div class="eac-subpanel-body">${this._renderActionConfig(alert, index, key, null)}</div>
         </details>`;
     }
     const cfg = alert[key] || { action: "none" };
@@ -11637,16 +11696,16 @@ class AlertTickerCardEditor extends LitElement {
       }
 
       /* ---- Section header (back button) ---- */
-      .atc-save-now {
+      .eac-save-now {
         margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
         padding: 4px 10px; border-radius: var(--ltek-r-ctrl, 6px); cursor: pointer; font: inherit;
         font-size: var(--ltek-fs-body, 12px); font-weight: 600; --mdc-icon-size: 16px;
         border: 1px solid var(--primary-color, #03a9f4); background: transparent; color: var(--primary-color, #03a9f4);
       }
-      .atc-save-now:hover:not([disabled]) { background: color-mix(in srgb, var(--primary-color, #03a9f4) 12%, transparent); }
-      .atc-save-now.is-saved { border-color: var(--success-color, #4caf50); color: var(--success-color, #4caf50); }
-      .atc-save-now.is-error { border-color: var(--error-color, #f44336); color: var(--error-color, #f44336); }
-      .atc-save-now[disabled] { opacity: 0.6; cursor: default; }
+      .eac-save-now:hover:not([disabled]) { background: color-mix(in srgb, var(--primary-color, #03a9f4) 12%, transparent); }
+      .eac-save-now.is-saved { border-color: var(--success-color, #4caf50); color: var(--success-color, #4caf50); }
+      .eac-save-now.is-error { border-color: var(--error-color, #f44336); color: var(--error-color, #f44336); }
+      .eac-save-now[disabled] { opacity: 0.6; cursor: default; }
       .section-header {
         display: flex;
         align-items: center;
@@ -11971,7 +12030,7 @@ class AlertTickerCardEditor extends LitElement {
         font-style: italic;
       }
       /* small status lists: name · entity id · state · action icon */
-      .atc-hist-list .filter-entity-row {
+      .eac-hist-list .filter-entity-row {
         grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto;
       }
       .filter-entity-row {
@@ -12023,10 +12082,10 @@ class AlertTickerCardEditor extends LitElement {
         justify-content: center;
         line-height: 0;
       }
-      .filter-entity-action .atc-act {
+      .filter-entity-action .eac-act {
         padding: 2px;
       }
-      .filter-entity-action .atc-act ha-icon {
+      .filter-entity-action .eac-act ha-icon {
         --mdc-icon-size: 18px;
       }
       .rs-ex-icon:hover:not([disabled]) {
@@ -12411,7 +12470,7 @@ class AlertTickerCardEditor extends LitElement {
       .alert-form {
         position: relative;
       }
-      .atc-sec-frame {
+      .eac-sec-frame {
         position: absolute;
         border: 1px solid var(--accent-color, var(--primary-color, #03a9f4));
         border-radius: 8px;
@@ -12422,11 +12481,11 @@ class AlertTickerCardEditor extends LitElement {
         padding-left: 8px;
         padding-right: 2px;
       }
-      .alert-form .atc-sec-body {
+      .alert-form .eac-sec-body {
         margin-left: 8px;
         margin-right: 8px;
       }
-      .atc-check-row {
+      .eac-check-row {
         display: flex;
         flex-wrap: wrap;
         gap: 4px 16px;
@@ -12439,74 +12498,74 @@ class AlertTickerCardEditor extends LitElement {
         gap: 4px;
         padding: 2px 0;
       }
-      .atc-quickstart,
-      .atc-quickstart[open] {
+      .eac-quickstart,
+      .eac-quickstart[open] {
         margin: 6px 0 10px;
         border: 1px dashed var(--primary-color, #03a9f4);
       }
-      .atc-seg {
+      .eac-seg {
         position: sticky; top: 0; z-index: 5;
         display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
         padding: 8px 0; margin-bottom: 4px;
         background: var(--card-background-color, var(--primary-background-color, #1c1c1c));
       }
-      .atc-seg--4 { grid-template-columns: repeat(4, 1fr); }
-      @media (max-width: 460px) { .atc-seg--4 { grid-template-columns: repeat(2, 1fr); } }
-      .atc-seg-btn {
+      .eac-seg--4 { grid-template-columns: repeat(4, 1fr); }
+      @media (max-width: 460px) { .eac-seg--4 { grid-template-columns: repeat(2, 1fr); } }
+      .eac-seg-btn {
         padding: 7px 6px; border-radius: var(--ltek-r-ctrl, 6px); cursor: pointer; font: inherit;
         font-weight: 600; font-size: var(--ltek-fs-body, 12px);
         border: 1px solid var(--divider-color, #444); background: transparent; color: var(--primary-text-color);
         transition: border-color .15s, box-shadow .15s, background .15s;
       }
-      .atc-seg-btn:hover { border-color: var(--primary-color, #03a9f4); }
-      .atc-seg-btn.is-on {
+      .eac-seg-btn:hover { border-color: var(--primary-color, #03a9f4); }
+      .eac-seg-btn.is-on {
         border-color: var(--primary-color, #03a9f4); color: var(--primary-color, #03a9f4);
         background: color-mix(in srgb, var(--primary-color, #03a9f4) 12%, transparent);
         box-shadow: 0 0 0 1px var(--primary-color, #03a9f4), 0 0 10px color-mix(in srgb, var(--primary-color, #03a9f4) 55%, transparent);
       }
-      .atc-theme-edit { --mdc-icon-size: var(--ltek-icon-sm, 16px); color: var(--secondary-text-color, #aaa); flex-shrink: 0; margin-left: 4px; }
-      .atc-theme-edit.is-open, .alert-item:hover .atc-theme-edit { color: var(--primary-color, #03a9f4); }
-      .atc-customized { color: var(--accent-color, var(--primary-color, #03a9f4)); }
-      .atc-act--del:hover:not([disabled]) { color: var(--error-color, #f44336) !important; }
-      .atc-look-note a { margin-left: 4px; }
-      .atc-preset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+      .eac-theme-edit { --mdc-icon-size: var(--ltek-icon-sm, 16px); color: var(--secondary-text-color, #aaa); flex-shrink: 0; margin-left: 4px; }
+      .eac-theme-edit.is-open, .alert-item:hover .eac-theme-edit { color: var(--primary-color, #03a9f4); }
+      .eac-customized { color: var(--accent-color, var(--primary-color, #03a9f4)); }
+      .eac-act--del:hover:not([disabled]) { color: var(--error-color, #f44336) !important; }
+      .eac-look-note a { margin-left: 4px; }
+      .eac-preset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
       .rs-chip--own { background: color-mix(in srgb, var(--accent-color, var(--primary-color, #03a9f4)) 18%, transparent);
         color: var(--accent-color, var(--primary-color, #03a9f4)); }
       .rs-chip-x { border: none; background: none; color: inherit; cursor: pointer; padding: 0 0 0 4px; font-size: 11px; }
       .rs-chip-x:hover { color: var(--error-color, #f44336); }
-      .atc-theme-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
-      .atc-theme-panel { padding: 4px 10px 10px; }
-      .atc-inherit { opacity: 0.65; font-size: var(--ltek-fs-small, 11px); white-space: nowrap; }
-      .atc-inherit--changed { opacity: 1; color: var(--accent-color, var(--primary-color, #03a9f4)); }
-      .atc-mod-mark { --mdc-icon-size: 14px; color: var(--primary-color, #03a9f4); vertical-align: middle; }
-      .atc-btn-reset {
+      .eac-theme-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+      .eac-theme-panel { padding: 4px 10px 10px; }
+      .eac-inherit { opacity: 0.65; font-size: var(--ltek-fs-small, 11px); white-space: nowrap; }
+      .eac-inherit--changed { opacity: 1; color: var(--accent-color, var(--primary-color, #03a9f4)); }
+      .eac-mod-mark { --mdc-icon-size: 14px; color: var(--primary-color, #03a9f4); vertical-align: middle; }
+      .eac-btn-reset {
         display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 10px;
         border: 1px solid var(--divider-color, #ccc); border-radius: 6px; background: transparent;
         color: var(--primary-text-color); font: inherit; font-size: 0.85rem; cursor: pointer;
         --mdc-icon-size: 16px;
       }
-      .atc-btn-reset:hover:not([disabled]) { border-color: var(--primary-color, #03a9f4); color: var(--primary-color, #03a9f4); }
-      .atc-btn-reset[disabled] { opacity: 0.4; cursor: default; }
-      .atc-confirm { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: var(--ltek-fs-label, 13px); }
-      .atc-btn-reset--danger { border-color: var(--error-color, #f44336); color: var(--error-color, #f44336); }
-      .atc-act--on {
+      .eac-btn-reset:hover:not([disabled]) { border-color: var(--primary-color, #03a9f4); color: var(--primary-color, #03a9f4); }
+      .eac-btn-reset[disabled] { opacity: 0.4; cursor: default; }
+      .eac-confirm { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: var(--ltek-fs-label, 13px); }
+      .eac-btn-reset--danger { border-color: var(--error-color, #f44336); color: var(--error-color, #f44336); }
+      .eac-act--on {
         color: var(--accent-color, var(--primary-color, #03a9f4));
         background: color-mix(in srgb, var(--accent-color, var(--primary-color, #03a9f4)) 15%, transparent);
         border-radius: 6px;
       }
-      .atc-frow {
+      .eac-frow {
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0;
       }
-      .atc-frow--nowrap { flex-wrap: nowrap; }
-      .atc-frow-label { white-space: nowrap; font-size: 0.9rem; color: var(--primary-text-color); }
-      .atc-frow-select { width: auto; min-width: 0; flex: 0 1 auto; }
-      .atc-frow-text {
+      .eac-frow--nowrap { flex-wrap: nowrap; }
+      .eac-frow-label { white-space: nowrap; font-size: 0.9rem; color: var(--primary-text-color); }
+      .eac-frow-select { width: auto; min-width: 0; flex: 0 1 auto; }
+      .eac-frow-text {
         flex: 1 1 140px; min-width: 0; padding: 6px 8px; border-radius: 6px; font: inherit;
         border: 1px solid var(--divider-color, #ccc); background: var(--card-background-color, transparent);
         color: var(--primary-text-color);
       }
-      .atc-slider { flex: 1 1 auto; min-width: 60px; accent-color: var(--primary-color, #03a9f4); }
-      .atc-slider-val {
+      .eac-slider { flex: 1 1 auto; min-width: 60px; accent-color: var(--primary-color, #03a9f4); }
+      .eac-slider-val {
         width: 44px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
       }
       .rs-chip--accent {
@@ -12514,18 +12573,18 @@ class AlertTickerCardEditor extends LitElement {
         color: var(--accent-color, var(--primary-color, #03a9f4));
         font-weight: 600;
       }
-      .atc-qs-body p {
+      .eac-qs-body p {
         margin: 0 0 6px;
         line-height: 1.4;
       }
-      .atc-subpanel {
+      .eac-subpanel {
         border: 1px solid var(--divider-color, #e0e0e0);
         border-radius: 6px;
       }
-      .atc-subpanel[open] {
+      .eac-subpanel[open] {
         border-color: var(--accent-color, var(--primary-color, #03a9f4));
       }
-      .atc-subpanel > summary {
+      .eac-subpanel > summary {
         list-style: none;
         display: flex;
         align-items: center;
@@ -12538,10 +12597,10 @@ class AlertTickerCardEditor extends LitElement {
         text-transform: uppercase;
         color: var(--primary-color, #03a9f4);
       }
-      .atc-subpanel > summary::-webkit-details-marker {
+      .eac-subpanel > summary::-webkit-details-marker {
         display: none;
       }
-      .atc-subpanel > summary::after {
+      .eac-subpanel > summary::after {
         content: "";
         margin-left: auto;
         width: 8px;
@@ -12552,13 +12611,13 @@ class AlertTickerCardEditor extends LitElement {
         transition: transform 0.2s ease;
         margin-right: 4px;
       }
-      .atc-subpanel:has(.sec-changed) > summary::after {
+      .eac-subpanel:has(.sec-changed) > summary::after {
         margin-left: 6px;
       }
-      .atc-subpanel[open] > summary::after {
+      .eac-subpanel[open] > summary::after {
         transform: rotate(45deg);
       }
-      .atc-subpanel-body {
+      .eac-subpanel-body {
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -12570,7 +12629,7 @@ class AlertTickerCardEditor extends LitElement {
         color: var(--accent-color, var(--primary-color, #03a9f4));
         flex: none;
       }
-      .atc-sec-hidden {
+      .eac-sec-hidden {
         display: none !important;
       }
       .rs-advanced > summary {
@@ -12825,18 +12884,18 @@ class AlertTickerCardEditor extends LitElement {
         margin-bottom: 12px;
       }
       /* One panel per alert / rule set: the row is its header, the settings open inside it */
-      .atc-row {
+      .eac-row {
         border: 1px solid var(--divider-color, #e0e0e0);
         border-radius: 10px;
         margin-bottom: 6px;
         background: var(--card-background-color, #fff);
         overflow: hidden;
       }
-      .atc-row.is-open {
+      .eac-row.is-open {
         border: 2px solid var(--primary-color, #03a9f4);
         margin-bottom: 12px;
       }
-      .atc-row > .alert-item {
+      .eac-row > .alert-item {
         padding: 6px 8px;
         gap: 8px;
         border: none;
@@ -12844,10 +12903,10 @@ class AlertTickerCardEditor extends LitElement {
         margin-bottom: 0;
         background: transparent;
       }
-      .atc-row.is-open > .alert-item {
+      .eac-row.is-open > .alert-item {
         background: color-mix(in srgb, var(--primary-color, #03a9f4) 8%, var(--card-background-color, #fff));
       }
-      .atc-row-body .alert-form {
+      .eac-row-body .alert-form {
         border-top: 1px solid var(--divider-color, #e0e0e0);
       }
       .alert-entity-label .rs-kind-icon {
@@ -12863,21 +12922,21 @@ class AlertTickerCardEditor extends LitElement {
         margin-right: 0;
         margin-left: 2px;
       }
-      .atc-move-arrows {
+      .eac-move-arrows {
         display: flex;
         flex-direction: row;
       }
-      .atc-move-arrows .atc-act {
+      .eac-move-arrows .eac-act {
         padding: 0;
       }
-      .atc-row .atc-act {
+      .eac-row .eac-act {
         padding: 2px;
       }
-      .atc-row .alert-actions {
+      .eac-row .alert-actions {
         gap: 2px;
         align-items: center;
       }
-      .atc-theme-icon {
+      .eac-theme-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -12885,94 +12944,94 @@ class AlertTickerCardEditor extends LitElement {
         font-size: 1.25rem;
         line-height: 1;
       }
-      .atc-theme-icon ha-icon {
+      .eac-theme-icon ha-icon {
         --mdc-icon-size: 22px;
       }
-      .atc-tpl-panel {
+      .eac-tpl-panel {
         margin-bottom: 12px;
         border: 1px solid var(--primary-color, #03a9f4);   /* same accent border as the old template dropdown */
       }
-      .atc-tpl-toast {
+      .eac-tpl-toast {
         margin: 0 8px 8px;
       }
-      .atc-tpl-list {
+      .eac-tpl-list {
         border-top: 1px solid var(--divider-color, #e0e0e0);
       }
-      .atc-tpl-row {
+      .eac-tpl-row {
         padding: 6px 8px;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
       }
-      .atc-tpl-row:last-child {
+      .eac-tpl-row:last-child {
         border-bottom: none;
       }
-      .atc-tpl-row--none .atc-tpl-main {
+      .eac-tpl-row--none .eac-tpl-main {
         opacity: 0.55;
       }
-      .atc-tpl-main {
+      .eac-tpl-main {
         display: flex;
         align-items: center;
         gap: 8px;
       }
-      .atc-move-arrows .atc-act ha-icon {
+      .eac-move-arrows .eac-act ha-icon {
         --mdc-icon-size: 20px;
       }
-      .atc-drag {
+      .eac-drag {
         cursor: grab;
         color: var(--secondary-text-color, #aaa);
         line-height: 0;
       }
-      .atc-drag ha-icon {
+      .eac-drag ha-icon {
         --mdc-icon-size: 22px;
       }
-      .atc-row--drop {
+      .eac-row--drop {
         border-color: var(--primary-color, #03a9f4);
         box-shadow: 0 -3px 0 var(--primary-color, #03a9f4);
       }
-      .atc-row--off > .alert-item {
+      .eac-row--off > .alert-item {
         opacity: 0.5;
       }
-      .atc-act {
+      .eac-act {
         padding: 4px;
         line-height: 0;
         color: var(--secondary-text-color, #aaa);
       }
-      .atc-act ha-icon {
+      .eac-act ha-icon {
         --mdc-icon-size: 22px;
       }
-      .atc-act:hover:not([disabled]) {
+      .eac-act:hover:not([disabled]) {
         color: var(--primary-text-color, #fff);
       }
-      .atc-act[disabled] {
+      .eac-act[disabled] {
         opacity: 0.3;
         cursor: default;
       }
-      .atc-icon--on {
+      .eac-icon--on {
         color: var(--primary-color, #03a9f4);
       }
-      .atc-icon--off {
+      .eac-icon--off {
         color: var(--secondary-text-color, #aaa);
         opacity: 0.6;
       }
-      .atc-icon--unavailable[disabled] {
+      .eac-icon--unavailable[disabled] {
         opacity: 0.25;
       }
-      .atc-ov-list {
+      .eac-ov-list {
         display: flex;
         flex-direction: column;
       }
-      .atc-ov-row {
+      .eac-ov-row {
         padding: 4px 0;
         border-top: 1px solid var(--divider-color, #e0e0e0);
       }
-      .atc-del {
+      .eac-del {
         padding: 4px;
         color: var(--secondary-text-color, #aaa);
         line-height: 0;
       }
-      .atc-del ha-icon {
+      .eac-del ha-icon {
         --mdc-icon-size: 22px;
       }
-      .atc-del:hover {
+      .eac-del:hover {
         color: var(--error-color, #f44336);
         background: color-mix(in srgb, var(--error-color, #f44336) 15%, transparent);
       }
@@ -13095,23 +13154,23 @@ class AlertTickerCardEditor extends LitElement {
       }
       /* first subtitle of a panel body sits right under the panel's own header */
       .rs-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-      .atc-subpanel > summary { font-size: var(--ltek-fs-label); }
+      .eac-subpanel > summary { font-size: var(--ltek-fs-label); }
       .helper-text { font-size: var(--ltek-fs-small); }
       .native-select-label { font-size: var(--ltek-fs-body); }
       .native-select { font-size: var(--ltek-fs-label); }
       .alert-entity-label { font-size: var(--ltek-fs-label); }
       .alert-msg-label { font-size: var(--ltek-fs-small); }
       .alert-icon-badge { font-size: var(--ltek-icon-lg); }
-      .atc-act ha-icon, .btn-icon ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
+      .eac-act ha-icon, .btn-icon ha-icon { --mdc-icon-size: var(--ltek-icon-sm); }
       .form-row-inline, .toggle-row { font-size: var(--ltek-fs-label); }
-      .atc-gd-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-      .atc-gd .atc-subpanel-body .form-row { margin-bottom: 6px; }
-      .atc-ov-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: var(--ltek-fs-label); }
-      .atc-ov-row .atc-icon--on { color: var(--primary-color, #03a9f4); }
-      .atc-ov-row--hidden .atc-ov-name, .atc-ov-row--hidden .atc-ov-icon { opacity: 0.45; }
-      .atc-ov-icon { --mdc-icon-size: var(--ltek-icon-sm); display: inline-flex; }
-      .atc-ov-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .atc-scope-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+      .eac-gd-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+      .eac-gd .eac-subpanel-body .form-row { margin-bottom: 6px; }
+      .eac-ov-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: var(--ltek-fs-label); }
+      .eac-ov-row .eac-icon--on { color: var(--primary-color, #03a9f4); }
+      .eac-ov-row--hidden .eac-ov-name, .eac-ov-row--hidden .eac-ov-icon { opacity: 0.45; }
+      .eac-ov-icon { --mdc-icon-size: var(--ltek-icon-sm); display: inline-flex; }
+      .eac-ov-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .eac-scope-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
       .rs-chip--scope {
         background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, transparent);
         color: var(--primary-color, #03a9f4); font-size: var(--ltek-fs-tiny, 10px); font-weight: 600;
@@ -13123,6 +13182,6 @@ class AlertTickerCardEditor extends LitElement {
 // ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
-if (!customElements.get("alert-ticker-card-editor")) {
-  customElements.define("alert-ticker-card-editor", AlertTickerCardEditor);
+if (!customElements.get("easy-alert-card-editor")) {
+  customElements.define("easy-alert-card-editor", EasyAlertCardEditor);
 }

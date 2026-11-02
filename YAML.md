@@ -1,9 +1,9 @@
-# AlertTicker Card — YAML reference
+# Easy Alert Card — YAML reference
 
 Everything the card reads from YAML. You don't need any of it: the visual editor writes all of these for you (see the [README](README.md)). This file is for writing or checking a config by hand.
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: binary_sensor.front_door
     state: "on"
@@ -224,7 +224,7 @@ alerts:
 See [Rule Sets](README.md#-rule-sets) in the README for what they do.
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 rule_sets:
   - id: entry_open
     name: Entry open at night
@@ -892,7 +892,7 @@ test_mode: true
 ### Battery monitor with entity filter
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 cycle_animation: slide
 alerts:
   - entity_filter: "battery"
@@ -909,7 +909,7 @@ alerts:
 ### Phone battery with charging status (`battery3d` theme)
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 show_when_clear: true
 alerts:
   - entity: sensor.iphone_battery_level
@@ -932,7 +932,7 @@ Works with any entity that reports a 0–100 numeric state (phones, tablets, lap
 ### Smoke detector with TTS + camera snapshot
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 overlay_mode: true
 overlay_scale: 1.5
 tts_entity: media_player.living_room
@@ -949,7 +949,7 @@ alerts:
 ### Alexa TTS announcement on door open
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: binary_sensor.front_door
     state: "on"
@@ -963,7 +963,7 @@ alerts:
 ### All smoke detectors via device_class
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - device_class: smoke
     state: "on"
@@ -977,7 +977,7 @@ alerts:
 ### Dynamic threshold from helper entity
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: sensor.outdoor_temperature
     operator: ">"
@@ -989,7 +989,7 @@ alerts:
 ### Timer with countdown
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: timer.ad_blocker_paused
     state: active
@@ -1001,7 +1001,7 @@ alerts:
 ### Alarm with tap_action
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: alarm_control_panel.home
     state: "triggered"
@@ -1020,7 +1020,7 @@ alerts:
 ### Smart snooze (resets the sensor)
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: binary_sensor.mailbox
     state: "on"
@@ -1036,7 +1036,7 @@ alerts:
 ### Night-time door alert (AND condition + time_range)
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: binary_sensor.front_door
     state: "on"
@@ -1054,7 +1054,7 @@ alerts:
 ### Alert visible only to admins
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: sensor.server_load
     operator: ">"
@@ -1067,7 +1067,7 @@ alerts:
 ### Push notification on door open
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: binary_sensor.front_door
     state: "on"
@@ -1082,7 +1082,7 @@ alerts:
 ### Music player with custom accent color
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 alerts:
   - entity: media_player.spotify_davide
     theme: music
@@ -1095,7 +1095,7 @@ alerts:
 ### Weather + 7-day forecast alternating
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 show_when_clear: true
 clear_display_mode: weather_forecast
 clear_weather_entity: weather.home
@@ -1111,7 +1111,7 @@ alerts:
 ### All-clear with animated weather + widget in cycle
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 show_when_clear: true
 clear_display_mode: weather_clock
 clear_weather_entity: weather.home
@@ -1126,7 +1126,7 @@ alerts:
 ### Multiple warnings cycling
 
 ```yaml
-type: custom:alert-ticker-card
+type: custom:easy-alert-card
 cycle_interval: 8
 cycle_animation: slide
 show_when_clear: true

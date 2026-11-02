@@ -1,32 +1,21 @@
-﻿<h1 align="center">AlertTicker Card for Home Assistant</h1>
+<h1 align="center">Easy Alert Card (Ltek)</h1>
 
 <p align="center">
-  <img src="images/logoreadme-400.png" alt="AlertTicker Card logo for Home Assistant Lovelace" width="260">
+  <strong>An alert & notification card for Home Assistant dashboards</strong><br>
+  64 visual themes and your own custom themes, rule sets, notification alerts, TTS, push notifications, a global overlay banner, media player mode, a weather widget, and a full visual editor. No YAML required.
 </p>
 
 <p align="center">
-  <strong>The most complete alert & notification card for Home Assistant Lovelace dashboards</strong><br>
-  64 visual themes, TTS voice announcements, push notifications, global overlay banner, media player mode, weather forecast widget, and a full visual editor. Zero YAML required.
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open this repository in HACS."></a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/custom-components/hacs"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg?logo=home-assistant" alt="HACS"></a>
-  <a href="https://github.com/djdevil/AlertTicker-Card/releases/latest"><img src="https://img.shields.io/github/v/release/djdevil/AlertTicker-Card?color=blue&label=version" alt="Version"></a>
-  <a href="https://github.com/djdevil/AlertTicker-Card/actions/workflows/hacs.yml"><img src="https://github.com/djdevil/AlertTicker-Card/actions/workflows/hacs.yml/badge.svg" alt="HACS Action"></a>
-  <a href="https://github.com/djdevil/AlertTicker-Card/releases"><img src="https://img.shields.io/github/downloads/djdevil/AlertTicker-Card/total?color=brightgreen&label=downloads" alt="Downloads"></a>
-  <a href="https://github.com/djdevil/AlertTicker-Card/stargazers"><img src="https://img.shields.io/github/stars/djdevil/AlertTicker-Card?color=yellow&label=stars" alt="Stars"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/djdevil/AlertTicker-Card?color=lightgrey" alt="License"></a>
-  <a href="https://github.com/djdevil/AlertTicker-Card/discussions"><img src="https://img.shields.io/github/discussions/djdevil/AlertTicker-Card?color=blueviolet&label=discussions" alt="Discussions"></a>
-  <a href="https://www.buymeacoffee.com/divil17f"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee" alt="Buy Me A Coffee"></a>
-</p>
+Current build: **v2026.11.02.0** · full history in [CHANGELOG.md](CHANGELOG.md)
 
-<p align="center">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=djdevil&repository=AlertTicker-Card&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open a repository inside the Home Assistant Community Store."></a>
-</p>
+> **Based on [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) by djdevil** (MIT). Easy Alert Card started as a fork of AlertTicker Card 1.3.17 and is now a separate card with its own card type (`custom:easy-alert-card`), so the two can be installed side by side. Coming from AlertTicker? See [Moving from AlertTicker Card](#-moving-from-alertticker-card).
 
 ---
 
-### ✨ What makes AlertTicker different
+### ✨ Highlights
 
 - 🎨 **64 visual themes** — from subtle `info` to cinematic 3D, timer countdowns, weather badges, and a full music-player mode with album art
 - ⚡ **Trigger on anything** — entity state, attribute, template, device class, entity filter with wildcards, AND/OR logic
@@ -40,18 +29,13 @@
 
 ---
 
-> ☕ **If this card saves you time, consider buying me a coffee — it keeps the updates coming!**
->
-> [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/divil17f)
-
 ---
 
 ## 📚 Table of Contents
 
+- [Moving from AlertTicker Card](#-moving-from-alertticker-card)
 - [What's new](#-whats-new) — the main improvements, briefly
-- [Community Contributors](#community-contributors)
-- [Join the Community](#-join-the-community) — HA forum thread, issues, discussions
-- [Video Tutorial](#-video-tutorial)
+- [Translators](#translators)
 - [Features at a Glance](#features-at-a-glance)
 - [Text-to-Speech (TTS) Announcements](#-text-to-speech-announcements-new-in-122) — Alexa, Google Home, HA speakers
 - [Mobile Push Notifications](#-mobile-push-notifications-new-in-13)
@@ -67,15 +51,27 @@
 - [YAML reference](YAML.md) — every option, snippets and real-world examples (separate file)
 - [Languages](#languages) — 12 supported languages
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
 - [License](#license)
-- [Support the Project](#support)
+
+---
+
+## 🚚 Moving from AlertTicker Card
+
+Easy Alert Card reads every AlertTicker Card option, so your existing config works as it is.
+
+1. **Install** Easy Alert Card from HACS (see [Installation](#installation)). You can keep AlertTicker Card installed — the two use different card types, storage and events, so they don't interfere.
+2. **Switch a card** — either:
+   - edit the card's YAML and change `type: custom:easy-alert-card` to `type: custom:easy-alert-card`, or
+   - add an Easy Alert Card, open **📥 Import from AlertTicker Card** on its main screen, paste the old card's YAML (the card alone, or a whole view / dashboard that contains it) and click **Import**.
+3. **Open the editor once and Save.** It converts the old setup the same way every time: filters and extra conditions become [rule sets](#-rule-sets), priority becomes the list order, and per-alert look settings (icon, colors, badge…) move into [custom themes](#-themes).
+
+Snoozes, dismissed alerts, sticky alerts and history saved in your browser by AlertTicker Card are copied over the first time Easy Alert Card loads; AlertTicker's own data isn't changed. When all your cards are moved, you can remove AlertTicker Card.
 
 ---
 
 ## 🆕 What's new
 
-The main improvements since 1.3.17, briefly — full details in the [CHANGELOG](CHANGELOG.md).
+What Easy Alert Card adds to AlertTicker Card 1.3.17, briefly — full details in the [CHANGELOG](CHANGELOG.md).
 
 - 🧩 **Rule Sets** — one rule engine for every filter and condition: named, reusable sets of include / exclude rules on entity id, name, domain, device class, integration, area, floor, label, state, attribute, age, another entity, time, weekday, sun and visibility, with a live "can match N entities" list. Old filters and conditions convert automatically.
 - 📨 **Notification alerts** — alert on Home Assistant notifications by sender, destination and text; Companion app commands are ignored and `clear_notification` clears the alert.
@@ -87,11 +83,14 @@ The main improvements since 1.3.17, briefly — full details in the [CHANGELOG](
 - 🌊 **New `water` theme**, **pulse** and **background flash** for any theme.
 - 🧪 **Safer test mode & previews** — they only apply while the editor is open, so nothing leaks onto the live dashboard.
 - ⚡ **Faster** — card updates take about 40% less time.
-- 📄 **YAML reference moved** to its own file, [YAML.md](YAML.md).
+- 📥 **Import from AlertTicker Card** and automatic carry-over of its saved state.
+- 📄 **YAML reference** in its own file, [YAML.md](YAML.md).
 
 ---
 
-## Community Contributors
+## Translators
+
+The translations come from AlertTicker Card and its contributors:
 
 A special thank you to **[@edwardtich1](https://github.com/edwardtich1)** for contributing the full **Russian (RU) language** translation — covering all card labels, editor UI, theme defaults, and operator names. ([#53](https://github.com/djdevil/AlertTicker-Card/issues/53))
 
@@ -104,38 +103,6 @@ A special thank you to **[@feixm1](https://github.com/feixm1)** for contributing
 A special thank you to **[@Bsector](https://github.com/Bsector)** for contributing the **Portuguese / pt-BR language** translation — providing the core card runtime strings that formed the basis of the full pt-BR support now included in the card. ([#90](https://github.com/djdevil/AlertTicker-Card/issues/90))
 
 A special thank you to **[@yunusuztr](https://github.com/yunusuztr)** for contributing the full **Turkish (TR) language** translation — covering all card labels, editor UI, theme defaults, TTS prefixes, operator names, and overlay strings. ([#134](https://github.com/djdevil/AlertTicker-Card/issues/134))
-
----
-
-## 💬 Join the Community
-
-**📢 [Official thread on the Home Assistant Community Forum →](https://community.home-assistant.io/t/alertticker-card-for-home-assistant/1005906)**
-
-Share your setup, ask questions, showcase your themes, and get help from other users and from the developer.
-
-- 🐛 [Report a bug](https://github.com/djdevil/AlertTicker-Card/issues/new/choose)
-- 💡 [Feature ideas & discussions](https://github.com/djdevil/AlertTicker-Card/discussions)
-- 🇮🇹 [Home Assistant Community — official thread](https://community.home-assistant.io/t/alertticker-card-for-home-assistant/1005906)
-
----
-
-## 🎥 Video Tutorial
-
-A big thank you to **[SmartHomeJunkie](https://www.youtube.com/@SmartHomeJunkie)** for making a dedicated video about AlertTicker Card!
-
-[![AlertTicker Card - SmartHomeJunkie](https://img.youtube.com/vi/pXRYqlzeUb8/maxresdefault.jpg)](https://youtu.be/pXRYqlzeUb8)
-
----
-
-![AlertTicker Card logo — Home Assistant Lovelace alert and notification card](images/logo.png)
-
-![AlertTicker Card demo showing multiple alerts cycling with animated 3D fold transitions in Home Assistant dashboard](images/demo.gif)
-
----
-
-![AlertTicker Card themes for Home Assistant — warning and info alert styles with icons](images/1.png)
-
-![AlertTicker Card multi-alert display with success, ticker, neon and matrix themes for Home Assistant Lovelace](images/2.png)
 
 ---
 
@@ -881,23 +848,20 @@ In the visual editor, open the **Alerts tab** → enable **Test mode** at the bo
 
 ## Installation
 
-### Via HACS (recommended)
+### Via HACS
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=djdevil&repository=AlertTicker-Card&category=plugin)
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin)
 
-1. Click the button above **or** open **HACS → Frontend**
-2. Click **⋮ → Custom repositories**
-3. Add `https://github.com/djdevil/AlertTicker-Card` as type **Lovelace**
-4. Find **AlertTicker Card** and click **Download**
-5. **Reload** your browser
+1. Click the button above, **or** open **HACS → ⋮ → Custom repositories** and add `https://github.com/Ltek/easy-alert-card` as type **Dashboard**
+2. Find **Easy Alert Card (Ltek)** and click **Download**
+3. **Reload** your browser
 
 ### Manual
 
-1. Download `alert-ticker-card.js` and `alert-ticker-card-editor.js` from the [latest release](https://github.com/djdevil/AlertTicker-Card/releases)
+1. Download `easy-alert-card.js` and `easy-alert-card-editor.js` from this repository
 2. Copy both files to `/config/www/`
-3. Go to **Settings → Dashboards → Resources**
-4. Add `/local/alert-ticker-card.js` as a **JavaScript module**
-5. **Reload** the browser
+3. Go to **Settings → Dashboards → Resources** and add `/local/easy-alert-card.js` as a **JavaScript module**
+4. **Reload** the browser
 
 ---
 
@@ -1073,7 +1037,7 @@ TTS fallback messages (auto-generated when no `tts_message` is set) are availabl
 ## Troubleshooting
 
 **Card not appearing after installation**
-- Add `alert-ticker-card.js` as a JavaScript module in Settings → Dashboards → Resources
+- Add `easy-alert-card.js` as a JavaScript module in Settings → Dashboards → Resources
 - Hard-reload the browser (Ctrl+Shift+R / Cmd+Shift+R)
 
 **Features not working after update (secondary text, templates, new options)**
@@ -1109,20 +1073,6 @@ TTS fallback messages (auto-generated when no `tts_message` is set) are availabl
 
 ---
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting bugs, suggesting features, and contributing code.
-
----
-
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## Support
-
-If you find this card useful, consider buying me a coffee ☕
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg?logo=buy-me-a-coffee)](https://www.buymeacoffee.com/divil17f)
+MIT — see [LICENSE](LICENSE). Easy Alert Card is based on [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) by djdevil; its copyright notice is kept in LICENSE. Report Easy Alert Card problems at [Ltek/easy-alert-card issues](https://github.com/Ltek/easy-alert-card/issues), not to AlertTicker Card.
