@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.02.1
+// Version: v2026.11.02.2
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.02.1";
+const CARD_VERSION = "2026.11.02.2";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -1856,7 +1856,7 @@ function _atcExtraConditionResults(hass, alert, ctx) {
 const _ATC_THEME_ALERT_KEYS = ["message_size", "message_color", "entity_size", "entity_color",
   "flash_background", "pulse", "disable_animation", "color", "show_badge", "badge_label",
   "icon", "icon_color", "icon_size", "icon_image", "use_ha_icon", "use_entity_picture"];
-const _ATC_THEME_LAYOUT_KEYS = ["card_height", "font_scale", "text_align", "card_border", "severity_border", "card_background"];
+const _ATC_THEME_LAYOUT_KEYS = ["card_height", "card_height_fill", "font_scale", "text_align", "card_border", "severity_border", "card_background"];
 
 function _atcThemeLook(config, id) {
   return config?.custom_themes?.[id] || config?.theme_styles?.[id] || null;
@@ -6321,6 +6321,8 @@ class EasyAlertCard extends LitElement {
       this.classList.remove("eac-has-bg-override");
     }
     this.classList.toggle("eac-center-text", L.text_align === "center");
+    // card_height_fill: the alert block fills the fixed height instead of being centered in it (#237 upstream)
+    this.classList.toggle("eac-fill-height", !!L.card_height && !!L.card_height_fill && !this._config?.vertical);
     this.shadowRoot?.querySelectorAll(".eac-ha-icon").forEach(el => {
       el.parentElement?.classList.add("eac-has-mdi-icon");
     });
@@ -11704,6 +11706,16 @@ class EasyAlertCard extends LitElement {
         flex-direction: column;
         justify-content: center;
       }
+      /* card_height_fill: stretch the visible alert block (background + severity border) to
+         the whole fixed height in horizontal layout; its content stays vertically centered.
+         Vertical layout already stretches (see .eac-vertical below). */
+      :host(.eac-fill-height) .eac-inner-clip > .at-fold-wrapper > div:not(.at-ticker):not(.eac-snoozed-bar):not(.eac-history-card):not(.at-music--player),
+      :host(.eac-fill-height) .eac-cam-bg-content > div:not(.at-ticker):not(.eac-snoozed-bar):not(.eac-history-card):not(.at-music--player) {
+        flex: 1;
+        min-height: 0;
+        box-sizing: border-box;
+      }
+      :host(.eac-fill-height) .eac-cam-bg-content { display: flex; flex-direction: column; flex: 1; min-height: 0; }
       .eac-test-mode-banner {
         background: rgba(255, 165, 0, 0.92);
         color: #000;

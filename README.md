@@ -9,7 +9,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open this repository in HACS."></a>
 </p>
 
-Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.11.02.2** · full history in [CHANGELOG.md](CHANGELOG.md)
 
  Migrating from [AlertTicker Card 1.3.17](https://github.com/djdevil/AlertTicker-Card) ... See [Moving from AlertTicker Card](#-moving-from-alertticker-card). 
  
@@ -933,7 +933,7 @@ Card-wide settings, rarely changed, in collapsible groups (closed by default; �
 
 | Group | Fields |
 |-------|--------|
-| **🖼️ Look** | Adapt to HA theme, vertical layout, centered text, large buttons, fixed card height, font scale, card border, severity border, custom background |
+| **🖼️ Look** | Adapt to HA theme, vertical layout, centered text, large buttons, fixed card height (and *Fill the card height*), font scale, card border, severity border, custom background |
 | **🔄 Cycling & Animation** | Cycle interval, transition animation (preview plays on change), disable animations |
 | **🎛️ Card controls** | Show the snooze bar, 💤 snooze button, 📋 history button, counter and dismiss bar |
 | **💤 Snooze** | Fixed duration or menu (30 min – 1 month); swipe to snooze |

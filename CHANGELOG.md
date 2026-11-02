@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.02.2
+
+- **Fill the card height** (`card_height_fill`): with a fixed card height, every alert block stretches to the full height instead of sitting centered at its own size, so short and long alerts match and line up with neighbouring cards. In Global Defaults → Look (shown once a height is set) and per custom theme. Requested in AlertTicker Card [#237](https://github.com/djdevil/AlertTicker-Card/issues/237).
+
 ## v2026.11.02.1
 
 **Easy Alert Card (Ltek)** — forked from [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) 1.3.17 by djdevil and now a separate card.

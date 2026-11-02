@@ -52,11 +52,12 @@ alerts:
 | `text_align` | `string` | `left` | `center` to center message text (useful in wide Panel layouts) |
 | `ha_theme` | `boolean` | `false` | Adapt card colors to the active HA global theme |
 | `history_keep_mode` / `history_keep` | `string` / `number` | `count` / `50` | What this browser stores: `count` = up to N alerts (max 5000), `days` = N days (max 5). Replaces `history_max_events` (still read) |
-| `custom_themes` | `object` | — | See [Custom themes](#custom-themes--alert-preset-associations). Your themes: `{ <id>: { base, name, …look } }`. Look keys: `icon`, `icon_color`, `icon_size`, `icon_image`, `use_ha_icon`, `use_entity_picture`, `message_size`, `message_color`, `entity_size`, `entity_color`, `show_badge`, `badge_label`, `pulse`, `flash_background`, `disable_animation`, `color` (accent), `card_background`, `card_height`, `font_scale`, `text_align`, `card_border`, `severity_border` |
+| `custom_themes` | `object` | — | See [Custom themes](#custom-themes--alert-preset-associations). Your themes: `{ <id>: { base, name, …look } }`. Look keys: `icon`, `icon_color`, `icon_size`, `icon_image`, `use_ha_icon`, `use_entity_picture`, `message_size`, `message_color`, `entity_size`, `entity_color`, `show_badge`, `badge_label`, `pulse`, `flash_background`, `disable_animation`, `color` (accent), `card_background`, `card_height`, `card_height_fill`, `font_scale`, `text_align`, `card_border`, `severity_border` |
 | `theme_associations` | `object` | — | Alert Preset associations per theme (built-in or custom): `{ <theme>: { items: ["domain:x", "class:y", "builtin:<preset>:<n>"], state } }` |
 | `history_show_mode` / `history_show` | `string` / `number` | all | What the card's 📋 panel lists: `count` = the latest N (max 500), `hours` = the last N hours (1–120); omit = everything stored |
 | `active_state_entity` | `string` | — | **Per-alert.** `input_boolean.*` entity to write `on`/`off` to when this specific alert becomes active or clears. Each alert can target a different boolean. Works only while the browser tab is open. |
 | `card_height` | `number` | *(auto)* | Fixed card height in px — prevents layout shifts when cycling |
+| `card_height_fill` | `boolean` | `false` | With `card_height`: stretch every alert block (background + severity border) to the full height instead of centering it, so short and long alerts are the same size. Horizontal layout only (vertical always fills). Also a custom-theme key |
 | `font_scale` | `number` | `1` | **New in 1.3.9.9.7** — proportional zoom for HD / 4K / wall-panel displays. `1` = normal, `1.5` = 50% larger, `2` = double. May require bumping `grid_options.rows`. |
 | `card_border` | `boolean` | `false` | Show the standard HA border around the card at all times |
 | `severity_border` | `boolean` | `true` | Show the 1px severity-colored border around each alert block. Set `false` to keep badge/icon color coding without the border. Width themeable via `--atc-severity-border-width`. |
@@ -215,7 +216,7 @@ alerts:
   - theme: flood_custom
 ```
 
-**Custom theme keys:** `base` (built-in theme), `name`, and the look keys `icon`, `icon_color`, `icon_size`, `icon_image`, `use_ha_icon`, `use_entity_picture`, `message_size`, `message_color`, `entity_size`, `entity_color`, `show_badge`, `badge_label`, `pulse`, `flash_background`, `disable_animation`, `color` (accent), `card_background`, `card_height`, `font_scale`, `text_align`, `card_border`, `severity_border`.
+**Custom theme keys:** `base` (built-in theme), `name`, and the look keys `icon`, `icon_color`, `icon_size`, `icon_image`, `use_ha_icon`, `use_entity_picture`, `message_size`, `message_color`, `entity_size`, `entity_color`, `show_badge`, `badge_label`, `pulse`, `flash_background`, `disable_animation`, `color` (accent), `card_background`, `card_height`, `card_height_fill`, `font_scale`, `text_align`, `card_border`, `severity_border`.
 
 **Association items:** `domain:<domain>`, `class:<device class>` (your own — build one alert with that theme, when the state is `state`, otherwise on any change), and `builtin:<preset>:<n>` (an alert of a built-in preset, moved to this theme). `items: []` removes the theme's built-in associations.
 

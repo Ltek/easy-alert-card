@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.02.1
+// Version: v2026.11.02.2
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.02.1";
+const CARD_VERSION = "2026.11.02.2";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
@@ -2054,6 +2054,8 @@ const ET = {
     inherited_theme: "theme",
     tri_default: "Default ({v})",
     tri_default_note: "Default: {v}",
+    card_height_fill: "Fill the card height",
+    card_height_fill_help: "Stretch every alert to the full fixed height, so short and long alerts are the same size and line up with neighbouring cards. Off = the alert keeps its own height, centered. (Vertical layout always fills.)",
     tri_on: "On",
     tri_off: "Off",
     pulse_card: "Pulse the card",
@@ -7295,6 +7297,7 @@ class EasyAlertCardEditor extends LitElement {
 
         <div class="rs-section-title">${this._t("theme_layout")}</div>
         ${this._sizeControl(this._t("theme_card_height"), ts.card_height, cfg.card_height || 80, 40, 400, set("card_height"), { inherited: cfg.card_height })}
+        ${(ts.card_height || cfg.card_height) ? this._triControl(this._t("card_height_fill"), ts.card_height_fill, !!cfg.card_height_fill, set("card_height_fill")) : ""}
         ${this._sizeControl(this._t("theme_font_scale"), ts.font_scale, cfg.font_scale || 1, 0.6, 3, set("font_scale"), { step: 0.1, unit: "×", inherited: cfg.font_scale })}
         ${this._triControl(this._t("text_align_center"), ts.text_align === "center" ? true : ts.text_align === "left" ? false : undefined, cfg.text_align === "center",
           (v) => this._setThemeStyle(theme, { text_align: v === true ? "center" : v === false ? "left" : undefined }))}
@@ -7328,7 +7331,7 @@ class EasyAlertCardEditor extends LitElement {
     const open = this._gdOpen || (this._gdOpen = new Set());
     const isSet = (k, dflt) => cfg[k] !== undefined && cfg[k] !== dflt;
     const MOD = {
-      look: ["ha_theme", "vertical", "text_align", "large_buttons", "card_height", "font_scale", "card_border", "card_background"].some((k) => isSet(k)) || cfg.severity_border === false,
+      look: ["ha_theme", "vertical", "text_align", "large_buttons", "card_height", "card_height_fill", "font_scale", "card_border", "card_background"].some((k) => isSet(k)) || cfg.severity_border === false,
       cycling: isSet("cycle_interval", 5) || isSet("cycle_animation", "fold") || !!cfg.disable_animation,
       controls: ["show_snooze_bar", "show_snooze_button", "show_history_button", "show_counter", "show_dismiss_bar"].some((k) => cfg[k] === false),
       snooze: !!cfg.snooze_default_duration || !!cfg.swipe_to_snooze,
@@ -7399,6 +7402,12 @@ class EasyAlertCardEditor extends LitElement {
           }}"
         ></ha-input>
         <div class="helper-text">${this._t("card_height_help")}</div>
+        ${cfg.card_height ? html`
+          <ha-formfield .label="${this._t("card_height_fill")}">
+            <ha-checkbox .checked="${!!cfg.card_height_fill}"
+              @change="${(e) => this._fireConfig({ ...this._config, card_height_fill: e.target.checked || undefined })}"></ha-checkbox>
+          </ha-formfield>
+          <div class="helper-text">${this._t("card_height_fill_help")}</div>` : ""}
       </div>
       <div class="form-row">
         <ha-input
