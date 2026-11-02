@@ -11,7 +11,10 @@
 
 Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
 
-> **Based on [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) by djdevil** (MIT). Easy Alert Card started as a fork of AlertTicker Card 1.3.17 and is now a separate card with its own card type (`custom:easy-alert-card`), so the two can be installed side by side. Coming from AlertTicker? See [Moving from AlertTicker Card](#-moving-from-alertticker-card).
+ Migrating from [AlertTicker Card 1.3.17](https://github.com/djdevil/AlertTicker-Card) ... See [Moving from AlertTicker Card](#-moving-from-alertticker-card). 
+ 
+ Huge thank you to djdevil for which my card is based on. its own card type (`custom:easy-alert-card`), so the two can be installed side by side.
+
 
 ---
 
@@ -26,8 +29,6 @@ Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
 - 🎯 **Per-alert control** — themes, time windows, user visibility, snooze, order, actions, group/collapse, `active_state_entity` for HA automations
 - 🖼️ **Full visual editor** — configure every option in the GUI, no YAML needed
 - 📱 **Mobile-first UX** — swipe to snooze, invisible touch zones, HA Companion push support
-
----
 
 ---
 
@@ -46,12 +47,12 @@ Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
 - [Upgrading: filters & conditions become rules](#upgrading-filters--conditions-become-rules)
 - [Themes](#themes) — all 64 themes explained
 - [How It Works](#how-it-works)
-- [Installation](#installation) — HACS + manual
+- [Installation](#install-via-hacs) — HACS + manual
 - [Visual Editor](#visual-editor)
 - [YAML reference](YAML.md) — every option, snippets and real-world examples (separate file)
-- [Languages](#languages) — 12 supported languages
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
+- [Languages](#languages) — 12 supported languages
 
 ---
 
@@ -59,7 +60,7 @@ Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 Easy Alert Card reads every AlertTicker Card option, so your existing config works as it is.
 
-1. **Install** Easy Alert Card from HACS (see [Installation](#installation)). You can keep AlertTicker Card installed — the two use different card types, storage and events, so they don't interfere.
+1. **Install** Easy Alert Card from HACS (see [Installation](#install-via-hacs)). You can keep AlertTicker Card installed — the two use different card types, storage and events, so they don't interfere.
 2. **Switch a card** — either:
    - edit the card's YAML and change `type: custom:easy-alert-card` to `type: custom:easy-alert-card`, or
    - add an Easy Alert Card, open **📥 Import from AlertTicker Card** on its main screen, paste the old card's YAML (the card alone, or a whole view / dashboard that contains it) and click **Import**.
@@ -86,23 +87,6 @@ What Easy Alert Card adds to AlertTicker Card 1.3.17, briefly — full details i
 - 📥 **Import from AlertTicker Card** and automatic carry-over of its saved state.
 - 📄 **YAML reference** in its own file, [YAML.md](YAML.md).
 
----
-
-## Translators
-
-The translations come from AlertTicker Card and its contributors:
-
-A special thank you to **[@edwardtich1](https://github.com/edwardtich1)** for contributing the full **Russian (RU) language** translation — covering all card labels, editor UI, theme defaults, and operator names. ([#53](https://github.com/djdevil/AlertTicker-Card/issues/53))
-
-A special thank you to **[@vdt2210](https://github.com/vdt2210)** for contributing the **Vietnamese (VI) language** translation. ([#12](https://github.com/djdevil/AlertTicker-Card/pull/12))
-
-A special thank you to **[@kgn3400](https://github.com/kgn3400)** for contributing the full **Danish (DA) language** translation — covering all card labels, editor UI, theme defaults, operator names, and overlay strings. ([#57](https://github.com/djdevil/AlertTicker-Card/pull/57))
-
-A special thank you to **[@feixm1](https://github.com/feixm1)** for contributing the full **Czech (CS) language** translation — covering all card labels, editor UI, theme defaults, operator names, and overlay strings. ([#74](https://github.com/djdevil/AlertTicker-Card/pull/74))
-
-A special thank you to **[@Bsector](https://github.com/Bsector)** for contributing the **Portuguese / pt-BR language** translation — providing the core card runtime strings that formed the basis of the full pt-BR support now included in the card. ([#90](https://github.com/djdevil/AlertTicker-Card/issues/90))
-
-A special thank you to **[@yunusuztr](https://github.com/yunusuztr)** for contributing the full **Turkish (TR) language** translation — covering all card labels, editor UI, theme defaults, TTS prefixes, operator names, and overlay strings. ([#134](https://github.com/djdevil/AlertTicker-Card/issues/134))
 
 ---
 
@@ -846,22 +830,13 @@ In the visual editor, open the **Alerts tab** → enable **Test mode** at the bo
 
 ---
 
-## Installation
-
-### Via HACS
+## Install via HACS
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin)
 
 1. Click the button above, **or** open **HACS → ⋮ → Custom repositories** and add `https://github.com/Ltek/easy-alert-card` as type **Dashboard**
 2. Find **Easy Alert Card (Ltek)** and click **Download**
 3. **Reload** your browser
-
-### Manual
-
-1. Download `easy-alert-card.js` and `easy-alert-card-editor.js` from this repository
-2. Copy both files to `/config/www/`
-3. Go to **Settings → Dashboards → Resources** and add `/local/easy-alert-card.js` as a **JavaScript module**
-4. **Reload** the browser
 
 ---
 
@@ -1076,3 +1051,21 @@ TTS fallback messages (auto-generated when no `tts_message` is set) are availabl
 ## License
 
 MIT — see [LICENSE](LICENSE). Easy Alert Card is based on [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) by djdevil; its copyright notice is kept in LICENSE. Report Easy Alert Card problems at [Ltek/easy-alert-card issues](https://github.com/Ltek/easy-alert-card/issues), not to AlertTicker Card.
+
+---
+
+## Translators
+
+The translations come from AlertTicker Card and its contributors:
+
+A special thank you to **[@edwardtich1](https://github.com/edwardtich1)** for contributing the full **Russian (RU) language** translation — covering all card labels, editor UI, theme defaults, and operator names. ([#53](https://github.com/djdevil/AlertTicker-Card/issues/53))
+
+A special thank you to **[@vdt2210](https://github.com/vdt2210)** for contributing the **Vietnamese (VI) language** translation. ([#12](https://github.com/djdevil/AlertTicker-Card/pull/12))
+
+A special thank you to **[@kgn3400](https://github.com/kgn3400)** for contributing the full **Danish (DA) language** translation — covering all card labels, editor UI, theme defaults, operator names, and overlay strings. ([#57](https://github.com/djdevil/AlertTicker-Card/pull/57))
+
+A special thank you to **[@feixm1](https://github.com/feixm1)** for contributing the full **Czech (CS) language** translation — covering all card labels, editor UI, theme defaults, operator names, and overlay strings. ([#74](https://github.com/djdevil/AlertTicker-Card/pull/74))
+
+A special thank you to **[@Bsector](https://github.com/Bsector)** for contributing the **Portuguese / pt-BR language** translation — providing the core card runtime strings that formed the basis of the full pt-BR support now included in the card. ([#90](https://github.com/djdevil/AlertTicker-Card/issues/90))
+
+A special thank you to **[@yunusuztr](https://github.com/yunusuztr)** for contributing the full **Turkish (TR) language** translation — covering all card labels, editor UI, theme defaults, TTS prefixes, operator names, and overlay strings. ([#134](https://github.com/djdevil/AlertTicker-Card/issues/134))
