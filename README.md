@@ -9,7 +9,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open this repository in HACS."></a>
 </p>
 
-Current build: **v2026.11.02.0** · full history in [CHANGELOG.md](CHANGELOG.md)
+Current build: **v2026.11.02.1** · full history in [CHANGELOG.md](CHANGELOG.md)
 
 > **Based on [AlertTicker Card](https://github.com/djdevil/AlertTicker-Card) by djdevil** (MIT). Easy Alert Card started as a fork of AlertTicker Card 1.3.17 and is now a separate card with its own card type (`custom:easy-alert-card`), so the two can be installed side by side. Coming from AlertTicker? See [Moving from AlertTicker Card](#-moving-from-alertticker-card).
 
