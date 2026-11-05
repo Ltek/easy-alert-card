@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.05.49
+
+- **Fixed: the global overlay kept appearing after `overlay_mode` was turned off** (or after the card was deleted). The browser's saved copy of overlay cards (kept so the overlay works after a reload) was only written while the overlay was on, so the old "on" copy came back on every reload for up to 30 days. It's now rewritten every time a card loads, so a card that has the overlay off drops out. With several overlay cards, loading one no longer drops the others' saved copies until their views are opened. Reported in AlertTicker Card [#238](https://github.com/djdevil/AlertTicker-Card/issues/238).
+
 ## v2026.11.02.48
 
 - **Fill the card height** (`card_height_fill`): with a fixed card height, every alert block stretches to the full height instead of sitting centered at its own size, so short and long alerts match and line up with neighbouring cards. In Global Defaults → Look (shown once a height is set) and per custom theme. Requested in AlertTicker Card [#237](https://github.com/djdevil/AlertTicker-Card/issues/237).

@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.02.48
+// Version: v2026.11.05.49
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.02.48";
+const CARD_VERSION = "2026.11.05.49";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -2316,6 +2316,7 @@ globalThis.__easyAlertShared = Object.freeze({
   legacyFilterDef: _atcLegacyFilterDef,
   migrateConfig: _atcMigrateConfig,
   importAlertTickerState: _eacImportAlertTickerState,
+  restoreOverlayRegs: () => _eacRestoreOverlayRegs(),
   nativeFlashThemes: _ATC_NATIVE_FLASH,
   themeAlertKeys: _ATC_THEME_ALERT_KEYS,
   themeLayoutKeys: _ATC_THEME_LAYOUT_KEYS,
@@ -3221,7 +3222,7 @@ const _ATC_OVERLAY = (() => {
       try { if (_currentWatcherAlert && _currentWatcherAlert.id === id) _hide(); } catch (_) {}
     },
     // Register / update a card's config so the watcher can track it cross-view
-    register(id, alerts, config, lang, element) {
+    register(id, alerts, config, lang, element, savedAt) {
       try {
         // Clean up stale registrations. Rules:
         // - NEVER delete a registration whose element is still active (connected or mounted) —
@@ -3234,6 +3235,12 @@ const _ATC_OVERLAY = (() => {
           const oel = oreg.element;
           if (oel && (oel.isConnected || oel._mounted)) continue; // active — leave it alone
           const ofp = (oreg.alerts || []).map(_atcAlertKey).join("|");
+          // A copy restored from storage (#222) belongs to a card that may not be mounted
+          // this session: drop it only when this card is that card (same alerts).
+          if (oreg.restored) {
+            if (ofp === fp) { _regs.delete(oid); _prevS.delete(oid); _bases.delete(oid); _filterNotified.delete(oid); }
+            continue;
+          }
           const isOrphan   = !oreg.disconnected;       // never called detach() — leftover
           const isSameSlot = oreg.disconnected && ofp === fp; // same card remounting
           if (isOrphan || isSameSlot) {
@@ -3248,13 +3255,18 @@ const _ATC_OVERLAY = (() => {
           const newSig = (alerts || []).map((a, i) => i + ":" + _atcAlertKey(a)).join("|");
           if (oldSig !== newSig) { _bases.delete(id); _prevS.delete(id); _filterNotified.delete(id); }
         }
-        _regs.set(id, { alerts: alerts || [], config, lang, element, disconnected: false });
+        const restored = !element; // only the module-load restore passes no element
+        _regs.set(id, { alerts: alerts || [], config, lang, element, disconnected: false,
+          restored, savedAt: restored ? (existing?.savedAt ?? savedAt ?? Date.now()) : undefined });
         if (!_watchInterval) _watchInterval = setInterval(_tick, 2000);
         // #222: persist overlay-enabled registrations so overlay keeps firing
         // on page reloads even if the user never navigates back to the view
         // holding the card (lazy-loaded Lovelace views would otherwise skip
         // re-instantiating the card and the watcher would stay dormant).
-        if (config?.overlay_mode) {
+        // Rewritten on every live registration (not only when the overlay is on), so a card
+        // whose overlay was turned off — or whose old copy it replaces — drops out of
+        // storage (#238 upstream: overlay kept firing after overlay_mode: false).
+        if (!restored) {
           try {
             const serialized = [];
             for (const [rid, rreg] of _regs) {
@@ -3264,11 +3276,14 @@ const _ATC_OVERLAY = (() => {
                 alerts: rreg.alerts,
                 config: rreg.config,
                 lang: rreg.lang,
-                savedAt: Date.now(),
+                savedAt: rreg.restored ? rreg.savedAt : Date.now(), // restored copies keep their age
               });
             }
-            const payload = JSON.stringify(serialized);
-            if (payload.length < 500000) localStorage.setItem("eac-overlay-regs", payload);
+            if (!serialized.length) localStorage.removeItem("eac-overlay-regs");
+            else {
+              const payload = JSON.stringify(serialized);
+              if (payload.length < 500000) localStorage.setItem("eac-overlay-regs", payload);
+            }
           } catch (_) {}
         }
       } catch (_) {}
@@ -3300,6 +3315,7 @@ const _ATC_OVERLAY = (() => {
 // watcher starts running immediately, before any card instance mounts. Without
 // this, overlay banners only fire after the user has visited the dashboard
 // view holding the card at least once per browser session.
+function _eacRestoreOverlayRegs() {
 try {
   const _savedRaw = localStorage.getItem("eac-overlay-regs");
   if (_savedRaw) {
@@ -3309,11 +3325,13 @@ try {
       for (const r of _saved) {
         if (!r || !r.id || !r.config?.overlay_mode) continue;
         if (r.savedAt && Date.now() - r.savedAt > _maxAgeMs) continue;
-        _ATC_OVERLAY.register(r.id, r.alerts || [], r.config || {}, r.lang || "en", null);
+        _ATC_OVERLAY.register(r.id, r.alerts || [], r.config || {}, r.lang || "en", null, r.savedAt);
       }
     }
   }
 } catch (_) {}
+}
+_eacRestoreOverlayRegs();
 
 // ---------------------------------------------------------------------------
 // AtcCardProxy — renders any native HA card config inside an alert slide.

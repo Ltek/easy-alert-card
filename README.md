@@ -9,7 +9,7 @@
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=Ltek&repository=easy-alert-card&category=plugin"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open your Home Assistant instance and open this repository in HACS."></a>
 </p>
 
-Current build: **v2026.11.02.48** · full history in [CHANGELOG.md](CHANGELOG.md)
+Full history in [CHANGELOG.md](CHANGELOG.md).
 
  Migrating from [AlertTicker Card 1.3.17](https://github.com/djdevil/AlertTicker-Card) ... See [Moving from AlertTicker Card](#-moving-from-alertticker-card). 
  
