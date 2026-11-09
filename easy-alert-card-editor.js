@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.05.49
+// Version: v2026.11.09.50
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.05.49";
+const CARD_VERSION = "2026.11.09.50";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
@@ -2054,6 +2054,14 @@ const ET = {
     inherited_theme: "theme",
     tri_default: "Default ({v})",
     tri_default_note: "Default: {v}",
+    overlay_test: "Test overlay",
+    overlay_test_help: "Shows the real banner now, with these settings and a sample alert. Try it on your phone to see where the banner lands. ▶ next to an alert below previews that alert.",
+    overlay_test_sample: "This is a test of the overlay",
+    overlay_row_test: "Preview this alert as an overlay",
+    overlay_safe_area: "Keep clear of the notch and status bar",
+    overlay_safe_area_help: "Places the banner inside the area the phone reports as safe: below the notch and status bar, above the home bar. No effect on screens without one.",
+    overlay_edge_offset: "Extra space from the screen edge (px)",
+    overlay_edge_offset_help: "Moves the banner further from the top (or bottom) edge. Use it if the banner still sits under the status bar on your phone. Empty = none.",
     card_height_fill: "Fill the card height",
     card_height_fill_help: "Stretch every alert to the full fixed height, so short and long alerts are the same size and line up with neighbouring cards. Off = the alert keeps its own height, centered. (Vertical layout always fills.)",
     tri_on: "On",
@@ -8005,6 +8013,10 @@ class EasyAlertCardEditor extends LitElement {
               <span style="opacity:.5;font-size:14px">✕</span>
             </div>
           </div>
+          <div class="overlay-test-row">
+            <ha-button @click="${() => this._testOverlay()}">▶ ${this._t("overlay_test")}</ha-button>
+            <div class="helper-text">${this._t("overlay_test_help")}</div>
+          </div>
           <div class="overlay-how-it-works">💡 ${this._t("overlay_how_works")}</div>
           <div class="overlay-controls">
             <div class="native-select-wrap">
@@ -8039,6 +8051,29 @@ class EasyAlertCardEditor extends LitElement {
               </select>
             </div>
             <div class="helper-text">${this._t("overlay_scale_help")}</div>
+
+            <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:500">${this._t("overlay_safe_area")}</div>
+                <div class="helper-text">${this._t("overlay_safe_area_help")}</div>
+              </div>
+              <ha-checkbox
+                .checked="${cfg.overlay_safe_area !== false}"
+                @change="${(e) => this._fireConfig({ ...this._config, overlay_safe_area: e.target.checked ? undefined : false })}"
+              ></ha-checkbox>
+            </div>
+            ${pos !== "center" ? html`
+              <ha-input
+                type="number"
+                .label="${this._t("overlay_edge_offset")}"
+                .value="${cfg.overlay_edge_offset ? String(cfg.overlay_edge_offset) : ""}"
+                min="0" max="300" placeholder="0"
+                @change="${(e) => {
+                  const v = parseInt(e.target.value);
+                  this._fireConfig({ ...this._config, overlay_edge_offset: (v > 0 ? Math.min(v, 300) : undefined) });
+                }}"
+              ></ha-input>
+              <div class="helper-text">${this._t("overlay_edge_offset_help")}</div>` : ""}
 
             ${this._renderOverlayAlertList()}
 
@@ -8099,6 +8134,7 @@ class EasyAlertCardEditor extends LitElement {
               () => this._updateAlert(i, { overlay: a.overlay !== false ? false : undefined }), false, a.overlay !== false ? "eac-icon--on" : "")}
             <span class="eac-ov-icon">${this._modeIcon(this._getAlertMode(i, a))}</span>
             <span class="eac-ov-name">${a.name || `${this._t("alert_num")} ${i + 1}`}</span>
+            ${this._iconButton("mdi:play-outline", this._t("overlay_row_test"), () => this._testOverlay(a))}
           </div>`)}
       </div>`;
   }
@@ -9618,6 +9654,13 @@ class EasyAlertCardEditor extends LitElement {
   _iconButton(icon, title, onClick, disabled = false, extraClass = "") {
     return html`<button class="btn-icon eac-act ${extraClass}" title="${title}" ?disabled="${disabled}"
       @click="${(e) => { e.stopPropagation(); if (!disabled) onClick(); }}"><ha-icon icon="${icon}"></ha-icon></button>`;
+  }
+
+  /** Shows the real overlay banner now with the current settings — for one alert, or a sample. */
+  _testOverlay(alert) {
+    const sh = globalThis.__easyAlertShared;
+    if (!sh?.previewOverlay) return;
+    sh.previewOverlay(this._config, alert || null, this._hass, this._lang, this._t("overlay_test_sample"));
   }
 
   /** Show in overlay on/off for an alert. Greyed while the card's overlay mode is off. */
@@ -12305,6 +12348,8 @@ class EasyAlertCardEditor extends LitElement {
         margin-top: 3px;
         line-height: 1.4;
       }
+      .overlay-test-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 4px; }
+      .overlay-test-row .helper-text { flex: 1; min-width: 180px; margin: 0; }
       .overlay-preview-wrap {
         background: rgba(0,0,0,0.1);
         padding: 10px 16px;

@@ -611,6 +611,12 @@ Position options:
 | `center` | Pops in at the center of the screen (scale animation) |
 | `bottom` | Slides in from the bottom of the screen |
 
+#### Phones with a notch, and testing the banner
+
+On phones the banner keeps clear of the notch, status bar and home bar (**Keep clear of the notch and status bar**, `overlay_safe_area`, on by default). If it still sits too close to the edge on your phone, set **Extra space from the screen edge** (`overlay_edge_offset`, px).
+
+Click **▶ Test overlay** on the Overlay page to show the real banner right away with your settings, or **▶** next to an alert to preview that alert. It works from the editor on any device, so you can check the position on your phone.
+
 ### Snooze
 
 Tap 💤 on any active alert to snooze it. Two modes (configurable in Global Defaults → Snooze):

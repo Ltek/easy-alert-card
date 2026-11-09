@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.05.49
+// Version: v2026.11.09.50
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.05.49";
+const CARD_VERSION = "2026.11.09.50";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -2316,6 +2316,7 @@ globalThis.__easyAlertShared = Object.freeze({
   legacyFilterDef: _atcLegacyFilterDef,
   migrateConfig: _atcMigrateConfig,
   importAlertTickerState: _eacImportAlertTickerState,
+  previewOverlay: (cfg, alert, hass, lang, sampleMsg) => _ATC_OVERLAY.preview(cfg, alert, hass, lang, sampleMsg),
   restoreOverlayRegs: () => _eacRestoreOverlayRegs(),
   nativeFlashThemes: _ATC_NATIVE_FLASH,
   themeAlertKeys: _ATC_THEME_ALERT_KEYS,
@@ -2479,6 +2480,10 @@ const _ATC_OVERLAY = (() => {
         display: flex; flex-direction: column; gap: 8px;
         box-sizing: border-box;
       }
+      #eac-overlay-root[popover] {
+        margin: 0; border: 0; background: transparent; color: inherit; overflow: visible;
+        inset: auto; left: 0; right: 0; width: auto; height: auto; max-width: none; max-height: none;
+      }
       #eac-overlay-root.eac-ov-top    { top: 0; }
       #eac-overlay-root.eac-ov-bottom { bottom: 0; }
       #eac-overlay-root.eac-ov-center { top: 50%; transform: translateY(-50%); }
@@ -2590,9 +2595,41 @@ const _ATC_OVERLAY = (() => {
     _root.className = `eac-ov-${pos === "bottom" ? "bottom" : pos === "center" ? "center" : "top"}`;
   }
 
+  // Space between the banner and the screen edge. overlay_safe_area (default on) adds the
+  // insets the device reports (notch / status bar / home bar; 0 on other screens);
+  // overlay_edge_offset adds fixed px on the edge the banner sits against (#240 upstream).
+  function _applyEdges(cfg) {
+    const safe = cfg.overlay_safe_area !== false;
+    const off = Math.max(0, Math.min(300, Number(cfg.overlay_edge_offset) || 0));
+    const pos = cfg.overlay_position === "bottom" ? "bottom" : cfg.overlay_position === "center" ? "center" : "top";
+    const ins = (side) => (safe ? `env(safe-area-inset-${side}, 0px)` : "0px");
+    _root.style.paddingTop = `calc(12px + ${ins("top")}${pos === "top" ? ` + ${off}px` : ""})`;
+    _root.style.paddingBottom = `calc(12px + ${ins("bottom")}${pos === "bottom" ? ` + ${off}px` : ""})`;
+    _root.style.paddingLeft = `calc(16px + ${ins("left")})`;
+    _root.style.paddingRight = `calc(16px + ${ins("right")})`;
+  }
+
+  // Editor previews show the banner above the open edit dialog: HA's dialogs can sit in
+  // the browser's top layer, which no z-index beats, so the preview uses a popover.
+  function _setTopLayer(on) {
+    if (!_root || typeof _root.showPopover !== "function") return;
+    try {
+      if (on) {
+        _root.setAttribute("popover", "manual");
+        if (_root.matches(":popover-open")) _root.hidePopover();
+        _root.showPopover();
+      } else if (_root.hasAttribute("popover")) {
+        if (_root.matches(":popover-open")) _root.hidePopover();
+        _root.removeAttribute("popover");
+      }
+    } catch (_) {}
+  }
+
   function _paint(icon, cat, badge, msg, cfg, theme, secondary, cameraUrl, cameraLive, camHass, camState, counterText) {
     _ensureStyle();
     _ensureRoot(cfg.overlay_position);
+    _setTopLayer(false);
+    _applyEdges(cfg);
     clearTimeout(_autoTimer);
     _root.innerHTML = "";
     const duration = cfg.overlay_duration != null ? Number(cfg.overlay_duration) : 8;
@@ -3217,6 +3254,28 @@ const _ATC_OVERLAY = (() => {
       try { _lastKey = dedupeKey; _lastAt = Date.now(); } catch (_) {}
     },
     hide: _hide,
+    // Editor "Test overlay": paint the real banner now with this config, for one alert or a
+    // sample. Skips dedupe and min priority; always closes on its own (8 s if it wouldn't).
+    preview(cfg, a, hass, lang, sampleMsg) {
+      try {
+        const tLang = T[lang] || T.en;
+        const alert = a || { theme: "emergency", icon: "🚨", message: sampleMsg || "Test" };
+        const cat = (THEME_META[alert.theme] || {}).category || "info";
+        const rawIcon = alert.icon || (THEME_META[alert.theme] || {}).icon || "🔔";
+        const icon = /^[\w-]+:/.test(rawIcon)
+          ? `<ha-icon icon="${rawIcon}"${alert.icon_color ? ` style="color:${alert.icon_color}"` : ""}></ha-icon>` : rawIcon;
+        const badge = alert.show_badge === false ? "" : (alert.badge_label || ({ critical: tLang.critical, warning: tLang.warning_label, ok: tLang.success_label }[cat] ?? tLang.info_label));
+        const msgP = (hass && alert.message) ? _resolveMsgAsync(hass, alert).catch(() => alert.message) : Promise.resolve(alert.message || "");
+        const secP = (hass && alert.secondary_text) ? _resolveMsgAsync(hass, { ...alert, message: alert.secondary_text }).catch(() => "") : Promise.resolve("");
+        return Promise.all([msgP, secP]).then(([m, sec]) => {
+          _currentWatcherAlert = null;
+          _paint(icon, cat, badge, (m && String(m).trim()) || alert.name || sampleMsg || "Test", cfg || {}, alert.theme, sec || "");
+          _setTopLayer(true);
+          const d = cfg?.overlay_duration != null ? Number(cfg.overlay_duration) : 8;
+          if (!(d > 0)) { clearTimeout(_autoTimer); _autoTimer = setTimeout(_hide, 8000); }
+        }).catch(() => {});
+      } catch (_) { return Promise.resolve(); }
+    },
     // Bug #135 fix 1: dismiss overlay when the card that owns it becomes visible
     hideIfFromCard(id) {
       try { if (_currentWatcherAlert && _currentWatcherAlert.id === id) _hide(); } catch (_) {}

@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.11.09.50
+
+- **▶ Test overlay**: a button on the Overlay page shows the real banner right away with the current settings and a sample alert, and **▶** next to each alert in the overlay list previews that alert. The preview shows above the open editor and always closes on its own.
+- **Fixed: on phones with a notch the overlay sat under the status bar** (top) or the home bar (bottom). The banner now keeps clear of them by default (**Keep clear of the notch and status bar**, `overlay_safe_area`), and **Extra space from the screen edge** (`overlay_edge_offset`, px) moves it further in when needed. Reported in AlertTicker Card [#240](https://github.com/djdevil/AlertTicker-Card/issues/240).
+
 ## v2026.11.05.49
 
 - **Fixed: the global overlay kept appearing after `overlay_mode` was turned off** (or after the card was deleted). The browser's saved copy of overlay cards (kept so the overlay works after a reload) was only written while the overlay was on, so the old "on" copy came back on every reload for up to 30 days. It's now rewritten every time a card loads, so a card that has the overlay off drops out. With several overlay cards, loading one no longer drops the others' saved copies until their views are opened. Reported in AlertTicker Card [#238](https://github.com/djdevil/AlertTicker-Card/issues/238).
