@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.11.12.51
+
+- **Fixed: `{area}` showed as literal text in the overlay** for alerts that match many entities (device class, filter or rule set), and `{device}` was left empty. Both are now filled in from the matched entity, as on the card. Reported in AlertTicker Card [#241](https://github.com/djdevil/AlertTicker-Card/issues/241).
+- **Overlay rotation now includes alerts that match many entities.** They were left out of the rotation. Each matching entity gets its own slide (up to 10 per alert; the last one says "+N more"), and a grouped alert shows one slide with its group message once at least `group_min` entities match.
+
 ## v2026.11.09.50
 
 - **▶ Test overlay**: a button on the Overlay page shows the real banner right away with the current settings and a sample alert, and **▶** next to each alert in the overlay list previews that alert. The preview shows above the open editor and always closes on its own.

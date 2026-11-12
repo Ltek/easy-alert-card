@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.09.50
+// Version: v2026.11.12.51
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.09.50";
+const CARD_VERSION = "2026.11.12.51";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -2843,6 +2843,39 @@ const _ATC_OVERLAY = (() => {
     return _atcAlertMatches(hass, a, _ovCtx(hass));
   }
 
+  // Rotation slides for a many-entity alert, shown the way the card shows it: one slide
+  // with group_message when grouped (and at least group_min match), else one slide per
+  // matching entity, at most _OV_ROT_MAX per alert (the last one says "+N more").
+  const _OV_ROT_MAX = 10;
+  function _ovFilterRotationItems(hass, a, i, reg, tLang) {
+    const matches = _findAllFilterMatches(hass, a);
+    if (!matches.length) return [];
+    const cat     = (THEME_META[a.theme] || {}).category || "info";
+    const rawIcon = a.icon || (THEME_META[a.theme] || {}).icon || "🔔";
+    const icon    = /^[\w-]+:/.test(rawIcon)
+      ? `<ha-icon icon="${rawIcon}"${a.icon_color ? ` style="color:${a.icon_color}"` : ""}></ha-icon>` : rawIcon;
+    const badge   = a.show_badge === false ? "" : (a.badge_label || ({ critical: tLang.critical, warning: tLang.warning_label, ok: tLang.success_label }[cat] ?? tLang.info_label));
+    const base = { icon, cat, badge, cfg: reg.config, theme: a.theme, cameraUrl: null, cameraLive: false, camHass: hass, camState: null };
+    const names = matches.map(([eid, es]) => es?.attributes?.friendly_name || eid);
+    if (a.group && matches.length >= (a.group_min || 3)) {
+      const sub = (t) => String(t || "").replace(/\{count\}/g, matches.length).replace(/\{names\}/g, names.join(", "));
+      const msg = _resolveMsg(hass, { ...a, entity: undefined, message: sub(a.group_message || "{count} alert") });
+      const secondary = a.group_secondary_text ? _resolveMsg(hass, { ...a, entity: undefined, message: sub(a.group_secondary_text), badge_label: "" }) : "";
+      return [{ ...base, dedupeKey: "g:" + i, msg, secondary }];
+    }
+    const shown = matches.slice(0, _OV_ROT_MAX);
+    return shown.map(([eid, fes], k) => {
+      const fname = names[k];
+      const msg = _resolveMsg(hass, { ...a, entity: eid, message: _ovEntityRaw(hass, a, eid, a.message || "") }) || fname;
+      let secondary = "";
+      if (a.show_filter_name !== false) secondary = a.show_filter_state ? `${fname}: ${_ovFmtState(hass, fes, a.attribute || null)}` : fname;
+      if (k === shown.length - 1 && matches.length > shown.length) {
+        secondary = [secondary, `+${matches.length - shown.length} ${tLang.more_label || "more"}`].filter(Boolean).join(" · ");
+      }
+      return { ...base, dedupeKey: "f:" + i + ":" + eid, msg, secondary };
+    });
+  }
+
   function _evalAlert(hass, a, prevMap) {
     if (!a.entity && !_atcIsFilterAlert(a)) return false;
     if (a.on_change && a.entity) {
@@ -2903,6 +2936,15 @@ const _ATC_OVERLAY = (() => {
       .replace(/\{device\}/g, deviceName)
       .replace(/\{area\}/g,   areaName)
       .replace(/\{timer\}/g,  "");
+  }
+
+  // Message for one entity matched by a many-entity alert (device class / filter / rule set):
+  // {state} honours the alert's attribute; {name}/{entity}/{device}/{area} come from the
+  // matched entity, like the card shows them (#241 upstream: {area} stayed literal).
+  function _ovEntityRaw(hass, a, eid, raw) {
+    const es = hass.states?.[eid];
+    const st = es ? _ovFmtState(hass, es, a.attribute || null) : "";
+    return _resolvePlaceholders(hass, { ...a, entity: eid }, String(raw ?? "").replace(/\{state\}/g, st));
   }
 
   // Resolves the alert message asynchronously, using HA's WebSocket render_template
@@ -3090,17 +3132,17 @@ const _ATC_OVERLAY = (() => {
 
         // #221: rotation mode — cycle the overlay through ALL currently active
         // alerts for this card instead of firing them one-by-one with dedup.
-        // Filter-mode alerts (device_class/area/label) are skipped from rotation
-        // for now; they continue through the per-tick path below.
+        // Many-entity alerts (device class / filter / rule set) are included: one
+        // slide per matching entity, or one group slide when the alert is grouped.
         if (reg.config?.overlay_rotation) {
           const items = [];
           const tLang = T[reg.lang] || T.en;
           for (const i of curActive) {
             const a = reg.alerts[i];
             if (!a) continue;
-            if (_atcIsFilterAlert(a)) continue;
             if (a.overlay === false) continue;
             if (reg.config.overlay_min_priority != null && (a.priority ?? 3) > reg.config.overlay_min_priority) continue;
+            if (_atcIsFilterAlert(a)) { items.push(..._ovFilterRotationItems(hass, a, i, reg, tLang)); newBases.add(i); continue; }
             const cat     = (THEME_META[a.theme] || {}).category || "info";
             const rawIcon = a.icon || (THEME_META[a.theme] || {}).icon || "🔔";
             const icon    = (rawIcon && /^[\w-]+:/.test(rawIcon))
@@ -3156,9 +3198,7 @@ const _ATC_OVERLAY = (() => {
               if (firedFilter) break; // one overlay per tick; remaining entities fire on next ticks
               const fname  = fes.attributes?.friendly_name || eid;
               const fstate = _ovFmtState(hass, fes, a.attribute || null);
-              const rawFilter = (a.message || "")
-                .replace(/\{state\}/g, fstate).replace(/\{name\}/g, fname)
-                .replace(/\{entity\}/g, eid).replace(/\{device\}/g, "").replace(/\{timer\}/g, "");
+              const rawFilter = _ovEntityRaw(hass, a, eid, a.message || "");
               const needsWS = rawFilter.includes("{{") || rawFilter.includes("{%");
               const quickFilter = needsWS ? _evalTemplate(hass, rawFilter) : null;
               const filterMsgPromise = needsWS

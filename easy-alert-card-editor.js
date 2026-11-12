@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.09.50
+// Version: v2026.11.12.51
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.09.50";
+const CARD_VERSION = "2026.11.12.51";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
