@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.12.51
+// Version: v2026.11.14.52
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.12.51";
+const CARD_VERSION = "2026.11.14.52";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -4631,6 +4631,10 @@ class EasyAlertCard extends LitElement {
       }
     };
 
+    // clear_forecast_show_date / clear_forecast_show_rain (#243 upstream). Days without rain
+    // keep an empty rain row, so every column has the same rows and the dates line up.
+    const showDateRow = this._config.clear_forecast_show_date !== false;
+    const showRainRow = this._config.clear_forecast_show_rain !== false;
     const cols = days.map((day, idx) => {
       const isToday = idx === 0;
       const emoji = WEATHER_EMOJI[day.condition] || "🌡️";
@@ -4652,19 +4656,19 @@ class EasyAlertCard extends LitElement {
             ${hi != null ? html`<span class="eac-fw-hi" style="color:${tempColor(hi)}">${hi}°</span>` : ""}
             ${lo != null ? html`<span class="eac-fw-lo" style="color:${tempColor(lo)}">${lo}°</span>` : ""}
           </div>
-          ${dateLabel ? html`<div class="eac-fw-date">${dateLabel}</div>` : ""}
-          ${precip != null && precip >= 20 ? html`
+          ${showDateRow ? html`<div class="eac-fw-date">${dateLabel || "\u00a0"}</div>` : ""}
+          ${!showRainRow ? "" : precip != null && precip >= 20 ? html`
           <div class="eac-fw-precip">
             <div class="eac-fw-precip-bar"><div class="eac-fw-precip-fill" style="height:${precip}%"></div></div>
             <span class="eac-fw-precip-pct">${precip}%</span>
-          </div>` : ""}
+          </div>` : html`<div class="eac-fw-precip eac-fw-precip--empty"></div>`}
         </div>`;
     });
 
     return html`
       <div class="eac-clear-widget eac-clear-forecast" style="--fw-accent:${accentColor}">
         <div class="eac-fw-bg-pulse"></div>
-        <div class="eac-fw-grid">${cols}</div>
+        <div class="eac-fw-grid${showDateRow ? "" : " eac-fw--nodate"}">${cols}</div>
       </div>`;
   }
 
@@ -4737,7 +4741,7 @@ class EasyAlertCard extends LitElement {
             ${(mode === "weather_clock" || mode === "weather_forecast") ? html`
             <div class="eac-cw-badge eac-cw-badge--clock">
               ${showDate && (this._config.clear_clock_date_position === "above") && this._clockDate ? html`<span class="eac-cw-clock-date">${this._clockDate}</span>` : ""}
-              <span class="eac-cw-clock">${this._clockTime || "00:00"}</span>
+              <span class="eac-cw-clock" style="${(Number(this._config.clear_clock_size) > 1) ? `zoom:${Math.min(3, Number(this._config.clear_clock_size))}` : ""}">${this._clockTime || "00:00"}</span>
               ${showDate && (this._config.clear_clock_date_position !== "above") && this._clockDate ? html`<span class="eac-cw-clock-date">${this._clockDate}</span>` : ""}
             </div>` : ""}
           </div>
@@ -13911,6 +13915,7 @@ class EasyAlertCard extends LitElement {
         min-width: 0;
       }
       .eac-fw-precip--empty { height: 22px; }
+      .eac-fw--nodate .eac-fw-precip { margin-top: auto; }
       .eac-fw-precip-bar {
         width: 3px;
         height: 18px;

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.11.14.52
+
+- **Fixed: forecast dates didn't line up** when some days had rain and others didn't. Every day now has the same rows.
+- **Forecast rows can be hidden**: *Show the date row* (`clear_forecast_show_date`) and *Show the rain row* (`clear_forecast_show_rain`) in the All Clear section, to make the forecast shorter.
+- **Clock size** (`clear_clock_size`): a bigger clock next to the weather; 2× is about as tall as the temperature in the Wall panel style. Same option names as AlertTicker Card 1.3.24, which added them for [#243](https://github.com/djdevil/AlertTicker-Card/issues/243).
+
 ## v2026.11.12.51
 
 - **Fixed: `{area}` showed as literal text in the overlay** for alerts that match many entities (device class, filter or rule set), and `{device}` was left empty. Both are now filled in from the matched entity, as on the card. Reported in AlertTicker Card [#241](https://github.com/djdevil/AlertTicker-Card/issues/241).

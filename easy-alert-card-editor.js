@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.12.51
+// Version: v2026.11.14.52
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.12.51";
+const CARD_VERSION = "2026.11.14.52";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
@@ -2054,6 +2054,11 @@ const ET = {
     inherited_theme: "theme",
     tri_default: "Default ({v})",
     tri_default_note: "Default: {v}",
+    clear_clock_size: "Clock size",
+    clear_clock_size_help: "Makes the clock next to the weather bigger. 2× is about as tall as the temperature in the Wall panel style.",
+    clear_forecast_show_date: "Show the date row in the forecast",
+    clear_forecast_show_rain: "Show the rain row in the forecast",
+    clear_forecast_rows_help: "Hide rows you don't need to make the forecast shorter.",
     overlay_test: "Test overlay",
     overlay_test_help: "Shows the real banner now, with these settings and a sample alert. Try it on your phone to see where the banner lands. ▶ next to an alert below previews that alert.",
     overlay_test_sample: "This is a test of the overlay",
@@ -7791,6 +7796,19 @@ class EasyAlertCardEditor extends LitElement {
 </ha-formfield>
             </div>
           </div>
+          ${(cfg.clear_display_mode === 'weather_clock' || cfg.clear_display_mode === 'weather_forecast') ? html`
+          <div class="form-row">
+            <div class="native-select-wrap">
+              <label class="native-select-label">${this._t("clear_clock_size")}</label>
+              <select class="native-select"
+                @change="${(e) => this._fireConfig({ ...this._config, clear_clock_size: parseFloat(e.target.value) > 1 ? parseFloat(e.target.value) : undefined })}"
+              >
+                ${[["1", "1×"], ["1.5", "1.5×"], ["2", "2×"], ["2.5", "2.5×"]].map(([v, l]) => html`
+                  <option value="${v}" ?selected="${String(cfg.clear_clock_size || 1) === v}">${l}</option>`)}
+              </select>
+            </div>
+            <div class="helper-text">${this._t("clear_clock_size_help")}</div>
+          </div>` : ''}
 
         ` : ''}
 
@@ -7893,6 +7911,26 @@ class EasyAlertCardEditor extends LitElement {
             ></ha-input>
           </div>
           <div class="helper-text">${this._t("weather_forecast_interval_help")}</div>
+        ` : ''}
+
+        ${(cfg.clear_display_mode === 'forecast' || cfg.clear_display_mode === 'weather_forecast') ? html`
+          <div class="form-row">
+            <div class="switch-row">
+              <ha-formfield .label="${this._t("clear_forecast_show_date")}">
+              <ha-checkbox .checked="${cfg.clear_forecast_show_date !== false}"
+                @change="${(e) => this._fireConfig({ ...this._config, clear_forecast_show_date: e.target.checked ? undefined : false })}"></ha-checkbox>
+</ha-formfield>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="switch-row">
+              <ha-formfield .label="${this._t("clear_forecast_show_rain")}">
+              <ha-checkbox .checked="${cfg.clear_forecast_show_rain !== false}"
+                @change="${(e) => this._fireConfig({ ...this._config, clear_forecast_show_rain: e.target.checked ? undefined : false })}"></ha-checkbox>
+</ha-formfield>
+            </div>
+          </div>
+          <div class="helper-text">${this._t("clear_forecast_rows_help")}</div>
         ` : ''}
 
         <!-- Show widget in alert cycle -->

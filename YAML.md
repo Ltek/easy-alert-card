@@ -88,6 +88,9 @@ alerts:
 | `overlay_dismissible` | `boolean` | `true` | `false` = the banner never auto-hides and has no close button; it stays until the condition clears |
 | `overlay_rotation` / `overlay_rotation_interval` | `boolean` / `number` | `false` / `5` | Cycle the banner through all active alerts (1/N counter), N seconds each. An alert that matches many entities shows one slide per entity (up to 10, the last says "+N more"), or one slide with its `group_message` when it is grouped |
 | `weather_forecast_interval` | `number` | `5` | Seconds between current weather and forecast in `weather_forecast` mode |
+| `clear_forecast_show_date` | `boolean` | `true` | `false` hides the date row in the forecast (`forecast` / `weather_forecast` modes) |
+| `clear_forecast_show_rain` | `boolean` | `true` | `false` hides the rain row in the forecast |
+| `clear_clock_size` | `number` | `1` | Clock size next to the weather (`weather_clock` / `weather_forecast`): `1`–`3`; `2` is about as tall as the Wall panel temperature |
 | `clear_icon` / `clear_icon_color` / `clear_icon_size` | `string` | — | All-clear icon (emoji or `mdi:`), its color and size |
 | `clear_clock_12h` | `boolean` | `false` | 12-hour clock (AM/PM) |
 | `clear_clock_color` / `clear_clock_date_color` / `clear_clock_background` | `string` | — | Custom clock digit, date and background colors |
