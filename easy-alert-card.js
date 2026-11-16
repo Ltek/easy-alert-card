@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.14.52
+// Version: v2026.11.16.53
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.14.52";
+const CARD_VERSION = "2026.11.16.53";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -6319,6 +6319,10 @@ class EasyAlertCard extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._mounted = true;
+    if (!this._svResizeObs && typeof ResizeObserver === "function") {
+      this._svResizeObs = new ResizeObserver(() => this._syncSvMarquee());
+    }
+    try { this._svResizeObs?.observe(this); } catch (_) {}
     if (!this._notifyUnsub) {
       this._notifyUnsub = _ATC_NOTIFY.onChange(() => {
         if (this._rawHass && _atcUsesNotifications(this._config)) this.hass = this._rawHass;
@@ -6349,6 +6353,7 @@ class EasyAlertCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._mounted = false;
+    try { this._svResizeObs?.disconnect(); } catch (_) {}
     if (this._notifyUnsub) { this._notifyUnsub(); this._notifyUnsub = null; }
     if (this._previewListener) { window.removeEventListener("eac-editor-preview", this._previewListener); this._previewListener = null; }
     if (this._ruleWakeTimer) { clearTimeout(this._ruleWakeTimer); this._ruleWakeTimer = null; this._ruleWakeAt = null; }
@@ -6387,8 +6392,32 @@ class EasyAlertCard extends LitElement {
    *  Also stamps 'eac-has-mdi-icon' on every icon container that holds an
    *  ha-icon so CSS can remove backgrounds/filters without :has() (wider
    *  browser support, covers both -icon and -icon-wrap class patterns). */
+  /** #239 upstream: scroll a secondary entity value only when it overflows its line and
+   *  animations are on. Measured without toggling the class first, so a value that keeps
+   *  scrolling doesn't restart from the beginning on every update. */
+  _syncSvMarquee() {
+    const wraps = this.shadowRoot?.querySelectorAll?.(".eac-sv-marquee-wrap");
+    if (!wraps) return;
+    for (const wrap of wraps) {
+      try {
+        const inner = wrap.querySelector(".eac-sv-marquee-inner");
+        const copy = wrap.querySelector(".eac-sv-copy");
+        if (!inner || !copy) continue;
+        const gap = parseFloat(getComputedStyle(copy).paddingRight) || 0;
+        const textW = copy.getBoundingClientRect().width - gap;
+        const scroll = wrap.clientWidth > 0 && textW > wrap.clientWidth + 1 && !wrap.closest(".eac-no-anim");
+        if (scroll !== wrap.classList.contains("eac-sv-scrolling")) wrap.classList.toggle("eac-sv-scrolling", scroll);
+        if (scroll) {
+          const dur = Math.max(6, copy.getBoundingClientRect().width / 35).toFixed(1) + "s";
+          if (inner.style.animationDuration !== dur) inner.style.animationDuration = dur;
+        }
+      } catch (_) {}
+    }
+  }
+
   updated(changedProps) {
     super.updated(changedProps);
+    this._syncSvMarquee();
     // Completely remove card from layout when hidden (no active alerts, no clear card, no snooze bar).
     // Exception: if card_border is enabled OR dashboard is in edit mode, keep visible so the placeholder shows.
     const isEditMode = _isEditMode();
@@ -6560,17 +6589,12 @@ class EasyAlertCard extends LitElement {
           const name = alert.show_secondary_name
             ? (es.attributes.friendly_name || alert.secondary_entity)
             : null;
-          const _svText = name ? (name + " " + val) : val;
-          if (_svText.length > 28) {
-            const _svDur = Math.max(6, _svText.length * 0.22).toFixed(1);
-            lines.push(html`<div class="eac-secondary-value eac-secondary-entity-line eac-sv-marquee-wrap">
-              <span class="eac-sv-marquee-inner" style="animation-duration:${_svDur}s">${_svText}   ${_svText}</span>
-            </div>`);
-          } else {
-            lines.push(html`<div class="eac-secondary-value eac-secondary-entity-line">
-              ${name ? html`<span class="eac-secondary-entity-name">${name}</span> ` : ""}${val}
-            </div>`);
-          }
+          // Scrolls only when it doesn't fit (decided after layout in _syncSvMarquee);
+          // otherwise one copy, cut with … when animations are off (#239 upstream).
+          const _svBody = html`${name ? html`<span class="eac-secondary-entity-name">${name}</span> ` : ""}${val}`;
+          lines.push(html`<div class="eac-secondary-value eac-secondary-entity-line eac-sv-marquee-wrap">
+            <span class="eac-sv-marquee-inner"><span class="eac-sv-copy">${_svBody}</span><span class="eac-sv-copy eac-sv-copy2" aria-hidden="true">${_svBody}</span></span>
+          </div>`);
         }
       } else if (this._hass) {
         // Entity not found — show a subtle warning so the user can correct the ID
@@ -8661,7 +8685,9 @@ class EasyAlertCard extends LitElement {
         font-size: 0.9rem;
         opacity: 0.85;
       }
-      .eac-sv-right [class$="-right"] {
+      /* The right column only holds the 1/N counter on most themes, but on the timer
+         themes it holds the countdown itself, so it stays visible there (#244 upstream). */
+      .eac-sv-right [class$="-right"]:not(.cd-right):not(.hg2-right):not(.at-timer-pulse > .tp-right) {
         display: none;
       }
       .eac-filter-label {
@@ -8686,9 +8712,19 @@ class EasyAlertCard extends LitElement {
         font-weight: 600;
         opacity: 0.85;
       }
-      .eac-sv-marquee-wrap { overflow: hidden; white-space: nowrap; text-overflow: clip; }
-      .eac-sv-marquee-inner { display: inline-block; white-space: nowrap; animation: eac-sv-scroll linear infinite; }
-      @keyframes eac-sv-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      /* Secondary entity value: one copy, … when too long. When it overflows and
+         animations are on, eac-sv-scrolling shows a second copy right after the first and
+         slides by exactly one copy plus gap, so the loop has no jump. The second copy is
+         absolutely positioned so it never widens the line (#239 upstream). */
+      .eac-sv-marquee-wrap { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; max-width: 100%; }
+      .eac-sv-marquee-inner { display: inline; position: relative; }
+      .eac-sv-copy2 { display: none; }
+      .eac-sv-marquee-wrap.eac-sv-scrolling { text-overflow: clip; }
+      .eac-sv-scrolling .eac-sv-marquee-inner { display: inline-block; animation: eac-sv-scroll linear infinite; }
+      .eac-sv-scrolling .eac-sv-copy { padding-right: 2.5em; }
+      .eac-sv-scrolling .eac-sv-copy2 { display: inline; position: absolute; left: 100%; top: 0; }
+      .eac-sv-right .eac-sv-marquee-wrap { flex: 0 1 auto; }
+      @keyframes eac-sv-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
       .eac-secondary-missing {
         font-size: 0.72rem;
         opacity: 0.5;

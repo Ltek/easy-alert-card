@@ -1,5 +1,10 @@
 # Changelog
 
+## v2026.11.16.53
+
+- **Fixed: the countdown was hidden on the countdown, hourglass and timer pulse themes** when `secondary_value_align: right` was set. Right-aligned values hide each theme's right column, which on these themes holds the remaining time. Reported in AlertTicker Card [#244](https://github.com/djdevil/AlertTicker-Card/issues/244).
+- **Fixed: the secondary entity value showed twice and its scrolling jumped.** It now scrolls only when it really doesn't fit, loops smoothly and stays inside the right margin; with animations off it shows one copy, cut with "…". Reported in AlertTicker Card [#239](https://github.com/djdevil/AlertTicker-Card/issues/239).
+
 ## v2026.11.14.52
 
 - **Fixed: forecast dates didn't line up** when some days had rain and others didn't. Every day now has the same rows.
