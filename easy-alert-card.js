@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.16.53
+// Version: v2026.11.16.54
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.16.53";
+const CARD_VERSION = "2026.11.16.54";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -2730,6 +2730,13 @@ const _ATC_OVERLAY = (() => {
 
   function _hide() {
     _currentWatcherAlert = null;
+    // Rotation: whatever was in the banner when it closed (✕, auto-hide, or the card coming
+    // on screen) stays closed until that alert / entity / notification clears.
+    if (_rotation) {
+      const done = _rotDone.get(_rotation.cardId) || new Set();
+      for (const it of _rotation.items) done.add(it.dedupeKey);
+      _rotDone.set(_rotation.cardId, done);
+    }
     _stopRotation();
     try {
       clearTimeout(_autoTimer);
@@ -2812,6 +2819,9 @@ const _ATC_OVERLAY = (() => {
   // #221: rotation state — cycles the overlay through multiple active alerts
   // from the same card at the user's chosen interval, with 1/N counter.
   let _rotation = null; // null | { cardId, items, idx, timer, cfg }
+  // Rotation slides already shown and closed, per card: not shown again until they clear.
+  // Without this, the next tick restarted the rotation 2 s after ✕ or auto-hide.
+  const _rotDone = new Map(); // cardId → Set<dedupeKey>
   // trigger_delay tracking for overlay (mirrors card-side logic for when card is not mounted)
   const _ovDelayTimers = new Map(); // "cardId:i" → setTimeout ID
   const _ovDelayActive = new Set(); // "cardId:i" keys whose delay has elapsed
@@ -3169,6 +3179,15 @@ const _ATC_OVERLAY = (() => {
             });
             newBases.add(i);
           }
+          {
+            const done = _rotDone.get(id);
+            if (done) {
+              const live = new Set(items.map((x) => x.dedupeKey));
+              for (const k of [...done]) if (!live.has(k)) done.delete(k); // cleared → may show again
+              const fresh = items.filter((x) => !done.has(x.dedupeKey));
+              items.length = 0; items.push(...fresh);
+            }
+          }
           if (items.length) {
             if (!_updateRotationItems(id, items)) _startRotation(id, items, reg.config);
             _currentWatcherAlert = { id, alertIdx: -1 }; // sentinel so hideIfFromCard works
@@ -3352,7 +3371,7 @@ const _ATC_OVERLAY = (() => {
         if (existing) {
           const oldSig = (existing.alerts || []).map((a, i) => i + ":" + _atcAlertKey(a)).join("|");
           const newSig = (alerts || []).map((a, i) => i + ":" + _atcAlertKey(a)).join("|");
-          if (oldSig !== newSig) { _bases.delete(id); _prevS.delete(id); _filterNotified.delete(id); }
+          if (oldSig !== newSig) { _bases.delete(id); _prevS.delete(id); _filterNotified.delete(id); _rotDone.delete(id); }
         }
         const restored = !element; // only the module-load restore passes no element
         _regs.set(id, { alerts: alerts || [], config, lang, element, disconnected: false,

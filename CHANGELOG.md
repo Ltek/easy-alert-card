@@ -1,5 +1,9 @@
 # Changelog
 
+## v2026.11.16.54
+
+- **Fixed: with *Rotate between alerts* on, the overlay kept coming back** about 2 seconds after it was closed with ✕ or hid itself, for as long as the alert stayed active. Since v2026.11.12.51 this also hit notification and rule-set alerts. A closed slide now stays closed until its alert, entity or notification clears; something new still shows (only the new slides).
+
 ## v2026.11.16.53
 
 - **Fixed: the countdown was hidden on the countdown, hourglass and timer pulse themes** when `secondary_value_align: right` was set. Right-aligned values hide each theme's right column, which on these themes holds the remaining time. Reported in AlertTicker Card [#244](https://github.com/djdevil/AlertTicker-Card/issues/244).
