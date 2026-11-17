@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.16.54
+// Version: v2026.11.17.55
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.16.54";
+const CARD_VERSION = "2026.11.17.55";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
@@ -1788,7 +1788,6 @@ const ET = {
     hub_desc_alerts: "Manage alert conditions",
     hub_desc_allclear: "Message when no alerts are active",
     hub_star_github: "Star on GitHub",
-    hub_based_on: "Based on",
     hub_report_issue: "Report an issue",
     hub_welcome: "Welcome! Configure your card by selecting a section below.",
     clear_display_mode_label: "Display mode",
@@ -2059,6 +2058,12 @@ const ET = {
     clear_forecast_show_date: "Show the date row in the forecast",
     clear_forecast_show_rain: "Show the rain row in the forecast",
     clear_forecast_rows_help: "Hide rows you don't need to make the forecast shorter.",
+    overlay_max_age_title: "Skip old notifications",
+    overlay_max_age_help: "The overlay doesn't show a notification older than this (seconds), e.g. one a phone or tablet only received after waking up. The card still lists it. 0 = always show. Empty = the default shown. Info also covers success, timer and style alerts.",
+    overlay_max_age_critical: "Critical: max age (s)",
+    overlay_max_age_warning: "Warning: max age (s)",
+    overlay_max_age_info: "Info: max age (s)",
+    overlay_max_age_none: "no limit",
     overlay_test: "Test overlay",
     overlay_test_help: "Shows the real banner now, with these settings and a sample alert. Try it on your phone to see where the banner lands. ▶ next to an alert below previews that alert.",
     overlay_test_sample: "This is a test of the overlay",
@@ -6847,13 +6852,8 @@ class EasyAlertCardEditor extends LitElement {
       </div>
 
       <div class="hub-footer">
-        <a class="hub-footer-star" href="https://github.com/Ltek/easy-alert-card" target="_blank" rel="noopener">
-          ⭐ ${this._t("hub_star_github")}
-        </a>
-        <span class="hub-footer-links">
-          <a class="hub-footer-link" href="https://github.com/Ltek/easy-alert-card/issues" target="_blank" rel="noopener">🐛 ${this._t("hub_report_issue")}</a>
-        </span>
-        <span class="hub-footer-love">${this._t("hub_based_on")} <a class="hub-footer-link" href="https://github.com/djdevil/AlertTicker-Card" target="_blank" rel="noopener">AlertTicker Card</a> — djdevil</span>
+        <a class="hub-footer-star" href="https://github.com/Ltek/easy-alert-card" target="_blank" rel="noopener">⭐ ${this._t("hub_star_github")}</a>
+        <a class="hub-footer-link" href="https://github.com/Ltek/easy-alert-card/issues" target="_blank" rel="noopener">🐛 ${this._t("hub_report_issue")}</a>
       </div>
     `;
   }
@@ -8112,6 +8112,21 @@ class EasyAlertCardEditor extends LitElement {
                 }}"
               ></ha-input>
               <div class="helper-text">${this._t("overlay_edge_offset_help")}</div>` : ""}
+
+            <div class="rs-section-title" style="margin-top:14px">${this._t("overlay_max_age_title")}</div>
+            <div class="helper-text">${this._t("overlay_max_age_help")}</div>
+            ${[["critical", 0], ["warning", 7200], ["info", 10]].map(([k, d]) => html`
+              <ha-input
+                type="number" min="0"
+                .label="${this._t(`overlay_max_age_${k}`)}"
+                .value="${cfg[`overlay_max_age_${k}`] != null ? String(cfg[`overlay_max_age_${k}`]) : ""}"
+                placeholder="${d || this._t("overlay_max_age_none")}"
+                @change="${(e) => {
+                  const raw = String(e.target.value).trim();
+                  const v = parseInt(raw, 10);
+                  this._fireConfig({ ...this._config, [`overlay_max_age_${k}`]: raw === "" || isNaN(v) || v < 0 || v === d ? undefined : v });
+                }}"
+              ></ha-input>`)}
 
             ${this._renderOverlayAlertList()}
 
@@ -11611,26 +11626,14 @@ class EasyAlertCardEditor extends LitElement {
       }
       .hub-footer {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         align-items: center;
+        justify-content: flex-start;
         gap: 10px;
         padding: 14px 0 4px;
         margin-top: 8px;
         border-top: 1px solid var(--divider-color, #ddd);
-      }
-      .hub-footer-love {
-        font-size: 0.8rem;
-        color: var(--secondary-text-color, #888);
-      }
-      .hub-footer-love strong {
-        color: var(--primary-text-color, #212121);
-      }
-      .hub-footer-links {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
       }
       .hub-footer-link {
         font-size: 0.78rem;

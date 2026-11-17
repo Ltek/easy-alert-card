@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.16.54
+// Version: v2026.11.17.55
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.16.54";
+const CARD_VERSION = "2026.11.17.55";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -1469,7 +1469,10 @@ const _ATC_NOTIFY = (() => {
     }
     const title = str(data.title), message = str(data.message);
     if (_isOwnEcho(svc.replace(/^notify\./, ""), message)) return;
-    const now = Date.now();
+    // Date a notification by when HA sent it (time_fired), not when this page processed it:
+    // a sleeping device that kept its connection gets the backlog on wake, all at once.
+    const fired = Date.parse(ev.time_fired || "");
+    const now = Number.isFinite(fired) ? Math.min(Date.now(), fired) : Date.now();
     const tag = data.data?.tag != null ? str(data.data.tag) : "";
     // Companion app commands are instructions to the phone, not notifications (never alerts).
     // clear_notification + tag takes back an earlier notification: clear it here too.
@@ -1495,7 +1498,7 @@ const _ATC_NOTIFY = (() => {
     // calling its members gives each member call a child context of the group call).
     const related = (n) => !!ctx.id && (n.ctx === ctx.id || (ctx.parent_id && (n.ctx === ctx.parent_id || n.parent === ctx.parent_id))
       || (n.parent && n.parent === ctx.id));
-    const sameText = (n) => n.title === title && n.message === message && n.tag === tag && now - n.at < MERGE_WINDOW_MS;
+    const sameText = (n) => n.title === title && n.message === message && n.tag === tag && Math.abs(now - n.at) < MERGE_WINDOW_MS;
     const same = _items.find(n => sameText(n) && related(n));
     if (same) {
       dest.forEach(x => { if (!same.dest.includes(x)) same.dest.push(x); });
@@ -2734,7 +2737,7 @@ const _ATC_OVERLAY = (() => {
     // on screen) stays closed until that alert / entity / notification clears.
     if (_rotation) {
       const done = _rotDone.get(_rotation.cardId) || new Set();
-      for (const it of _rotation.items) done.add(it.dedupeKey);
+      for (const it of _rotation.items) { done.add(it.dedupeKey); _ovMarkShown(it.notifKey); }
       _rotDone.set(_rotation.cardId, done);
     }
     _stopRotation();
@@ -2853,12 +2856,39 @@ const _ATC_OVERLAY = (() => {
     return _atcAlertMatches(hass, a, _ovCtx(hass));
   }
 
+  // overlay_max_age_<info|warning|critical> (seconds; 0 = no limit): the overlay skips a
+  // notification older than this, e.g. one that reached a device after it woke up. The card
+  // itself still lists it (notifications_retention). ok / style / timer use the info limit.
+  const _OV_MAX_AGE_DEFAULT = { info: 10, warning: 7200, critical: 0 };
+  function _ovMaxAgeS(cfg, cat) {
+    const k = cat === "critical" || cat === "warning" ? cat : "info";
+    const v = cfg?.[`overlay_max_age_${k}`];
+    return v != null && v !== "" && Number(v) >= 0 ? Number(v) : _OV_MAX_AGE_DEFAULT[k];
+  }
+  function _ovTooOld(cfg, a, es) {
+    if (!es?.attributes?.notification_type) return false;
+    const lim = _ovMaxAgeS(cfg, (THEME_META[a.theme] || {}).category || "info");
+    if (!(lim > 0)) return false;
+    const t = Date.parse(es.attributes.created_at || "");
+    return Number.isFinite(t) && Date.now() - t > lim * 1000;
+  }
+  // Notifications the overlay already showed (entity + send time). When the connection to HA
+  // comes back, HA lists the bell's notifications again; these don't fire a second time.
+  const _ovShownNotif = new Set();
+  const _ovNotifKey = (eid, es) => (es?.attributes?.notification_type ? `${eid}@${es.attributes.created_at || ""}` : "");
+  function _ovMarkShown(key) {
+    if (!key) return;
+    _ovShownNotif.add(key);
+    if (_ovShownNotif.size > 500) _ovShownNotif.delete(_ovShownNotif.values().next().value);
+  }
+
   // Rotation slides for a many-entity alert, shown the way the card shows it: one slide
   // with group_message when grouped (and at least group_min match), else one slide per
   // matching entity, at most _OV_ROT_MAX per alert (the last one says "+N more").
   const _OV_ROT_MAX = 10;
   function _ovFilterRotationItems(hass, a, i, reg, tLang) {
-    const matches = _findAllFilterMatches(hass, a);
+    const matches = _findAllFilterMatches(hass, a)
+      .filter(([eid, es]) => !_ovTooOld(reg.config, a, es) && !_ovShownNotif.has(_ovNotifKey(eid, es)));
     if (!matches.length) return [];
     const cat     = (THEME_META[a.theme] || {}).category || "info";
     const rawIcon = a.icon || (THEME_META[a.theme] || {}).icon || "🔔";
@@ -2882,7 +2912,7 @@ const _ATC_OVERLAY = (() => {
       if (k === shown.length - 1 && matches.length > shown.length) {
         secondary = [secondary, `+${matches.length - shown.length} ${tLang.more_label || "more"}`].filter(Boolean).join(" · ");
       }
-      return { ...base, dedupeKey: "f:" + i + ":" + eid, msg, secondary };
+      return { ...base, dedupeKey: "f:" + i + ":" + eid, msg, secondary, notifKey: _ovNotifKey(eid, fes) };
     });
   }
 
@@ -3212,6 +3242,8 @@ const _ATC_OVERLAY = (() => {
             let firedFilter = false;
             for (const [eid, fes] of allMatches) {
               if (notifiedEids.has(eid)) continue;
+              const nKey = _ovNotifKey(eid, fes);
+              if (_ovTooOld(reg.config, a, fes) || (nKey && _ovShownNotif.has(nKey))) { notifiedEids.add(eid); continue; }
               const key = id + ":" + eid + ":" + i;
               if (_isDupe(key)) { notifiedEids.add(eid); continue; }
               if (firedFilter) break; // one overlay per tick; remaining entities fire on next ticks
@@ -3238,6 +3270,7 @@ const _ATC_OVERLAY = (() => {
               const camUrl     = (a.camera_entity && !cameraLive) ? (hass.states[a.camera_entity]?.attributes?.entity_picture || null) : null;
               const paintCfg = reg.config, paintTheme = a.theme;
               notifiedEids.add(eid);
+              _ovMarkShown(nKey);
               _currentWatcherAlert = { id, alertIdx: i };
               firedFilter = true;
               filterMsgPromise.then(resolvedMsg => {

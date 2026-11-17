@@ -67,6 +67,7 @@ alerts:
 | `overlay_scale` | `number` | `1` | Banner zoom factor: `1`, `1.5`, `2`, or `3` |
 | `overlay_safe_area` | `boolean` | `true` | Keep the banner inside the area the device reports as safe (below a phone's notch / status bar, above the home bar). No effect on screens without one. `false` = flush to the screen edge |
 | `overlay_edge_offset` | `number` | — | Extra px between the banner and the top (or bottom) edge, 0–300. For phones where the banner still sits under the status bar. Ignored for `center` |
+| `overlay_max_age_critical` / `overlay_max_age_warning` / `overlay_max_age_info` | `number` | `0` / `7200` / `10` | Notification alerts only: the overlay skips a notification older than this many seconds (for example one a device received only after waking up). `0` = no limit. The alert's theme category decides which applies; success, timer and style use the info value. The card itself still lists the notification |
 | `tts_enabled` | `boolean` | `true` | Master toggle — set `false` to silence all TTS globally |
 | `tts_entity` | `string` | — | Default `media_player.*` speaker entity |
 | `tts_engine` | `string` | *(auto)* | TTS engine entity (auto-detected from first `tts.*` state if omitted) |

@@ -1,5 +1,12 @@
 # Changelog
 
+## v2026.11.17.55
+
+- **Fixed: devices showed old notifications as new after waking up.** A sleeping phone or tablet can keep its connection to Home Assistant and receive hours of notifications at once when it wakes; each was dated by when the page processed it. Notifications are now dated by when HA sent them, so ones older than `notifications_retention` are dropped on arrival.
+- **Skip old notifications in the overlay**, per category: Critical never expires, Warning after 2 hours, Info (and success / timer / style) after 10 seconds. Set on the Overlay page (`overlay_max_age_critical`, `overlay_max_age_warning`, `overlay_max_age_info`; 0 = always show). The card itself still lists them.
+- **A notification the overlay already showed doesn't show again** when the connection to HA comes back (HA then lists the bell's notifications again).
+- Editor footer: ⭐ Star on GitHub and 🐛 Report an issue on one row, and the "Based on AlertTicker Card" line is removed (the credit stays in the README and LICENSE).
+
 ## v2026.11.16.54
 
 - **Fixed: with *Rotate between alerts* on, the overlay kept coming back** about 2 seconds after it was closed with ✕ or hid itself, for as long as the alert stayed active. Since v2026.11.12.51 this also hit notification and rule-set alerts. A closed slide now stays closed until its alert, entity or notification clears; something new still shows (only the new slides).
