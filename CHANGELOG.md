@@ -1,5 +1,11 @@
 # Changelog
 
+## v2026.11.19.56
+
+- **Fixed: editor toggles and checkboxes had no labels on Home Assistant 2026.11.** HA removed the `ha-formfield` component the editor used for all 49 of them. They now use the editor's own label row; clicking a label still toggles it. Reported in AlertTicker Card [#246](https://github.com/djdevil/AlertTicker-Card/issues/246).
+- **Fixed: the overlay banner of an `on_change` alert vanished after about 2 seconds.** The change is now remembered: the banner stays for `auto_dismiss_after` seconds, a new change shows it again, and without `auto_dismiss_after` it stays until closed (or for the overlay duration when it can't be closed). Reported in AlertTicker Card [#245](https://github.com/djdevil/AlertTicker-Card/issues/245).
+- **Custom image on the `battery3d` theme**: `icon_image` and `use_entity_picture` now replace the drawn battery; the level, progress bar and colors stay. Asked in AlertTicker Card [#247](https://github.com/djdevil/AlertTicker-Card/issues/247).
+
 ## v2026.11.17.55
 
 - **Fixed: devices showed old notifications as new after waking up.** A sleeping phone or tablet can keep its connection to Home Assistant and receive hours of notifications at once when it wakes; each was dated by when the page processed it. Notifications are now dated by when HA sent them, so ones older than `notifications_retention` are dropped on arrival.

@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.17.55
+// Version: v2026.11.19.56
 const LitElement = Object.getPrototypeOf(
   customElements.get("ha-panel-lovelace") || customElements.get("hui-view")
 );
@@ -11,7 +11,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 // Must match the version in easy-alert-card.js
-const CARD_VERSION = "2026.11.17.55";
+const CARD_VERSION = "2026.11.19.56";
 
 // ---------------------------------------------------------------------------
 // Theme metadata — mirrors easy-alert-card.js
@@ -6389,6 +6389,12 @@ class EasyAlertCardEditor extends LitElement {
 
   constructor() {
     super();
+    // Clicking a toggle's label toggles it, as ha-formfield did (#246 upstream).
+    this.addEventListener("click", (e) => {
+      const lab = e.composedPath().find((n) => n.classList?.contains("eac-ff-label"));
+      const ctl = lab?.parentElement?.querySelector("ha-checkbox, ha-switch, ha-radio");
+      if (ctl && !ctl.disabled) { e.stopPropagation(); ctl.click(); }
+    });
     this._activeSection = null; // null = hub
     this._editingIndex = -1;            // -1 = no alert being edited
     this._rsEditing = -1;               // -1 = no rule set expanded
@@ -7363,42 +7369,42 @@ class EasyAlertCardEditor extends LitElement {
         ${group("look", "🖼️", "layout_defaults_look", html`
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("ha_theme")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.ha_theme}"
             @change="${(e) => this._fireConfig({ ...this._config, ha_theme: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("ha_theme")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("vertical")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.vertical}"
             @change="${(e) => this._fireConfig({ ...this._config, vertical: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("vertical")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("text_align_center")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.text_align === 'center'}"
             @change="${(e) => this._fireConfig({ ...this._config, text_align: e.target.checked ? 'center' : undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("text_align_center")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("large_buttons")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.large_buttons}"
             @change="${(e) => this._fireConfig({ ...this._config, large_buttons: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("large_buttons")}</span></div>
         </div>
       </div>
       <div class="form-row">
@@ -7416,10 +7422,10 @@ class EasyAlertCardEditor extends LitElement {
         ></ha-input>
         <div class="helper-text">${this._t("card_height_help")}</div>
         ${cfg.card_height ? html`
-          <ha-formfield .label="${this._t("card_height_fill")}">
+          <div class="eac-ff">
             <ha-checkbox .checked="${!!cfg.card_height_fill}"
               @change="${(e) => this._fireConfig({ ...this._config, card_height_fill: e.target.checked || undefined })}"></ha-checkbox>
-          </ha-formfield>
+          <span class="eac-ff-label">${this._t("card_height_fill")}</span></div>
           <div class="helper-text">${this._t("card_height_fill_help")}</div>` : ""}
       </div>
       <div class="form-row">
@@ -7440,29 +7446,29 @@ class EasyAlertCardEditor extends LitElement {
       </div>
       <div class="form-row">
         <div class="toggle-row">
-          <ha-formfield .label="${this._t("card_border")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.card_border}"
             @change="${(e) => this._fireConfig({ ...this._config, card_border: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("card_border")}</span></div>
         </div>
         <div class="helper-text">${this._t("card_border_help")}</div>
       </div>
       <div class="form-row">
         <div class="toggle-row">
-          <ha-formfield .label="${this._t("severity_border")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.severity_border !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, severity_border: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("severity_border")}</span></div>
         </div>
         <div class="helper-text">${this._t("severity_border_help")}</div>
       </div>
       <div class="form-row">
         <div class="toggle-row">
-          <ha-formfield .label="${this._t("card_background")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.card_background}"
             @change="${(e) => {
@@ -7474,7 +7480,7 @@ class EasyAlertCardEditor extends LitElement {
               }
             }}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("card_background")}</span></div>
         </div>
         ${cfg.card_background ? (() => {
           const { hex, alpha } = this._parseBgValue(cfg.card_background);
@@ -7545,12 +7551,12 @@ class EasyAlertCardEditor extends LitElement {
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("disable_animation")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.disable_animation}"
             @change="${(e) => this._fireConfig({ ...this._config, disable_animation: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("disable_animation")}</span></div>
         </div>
         <div class="helper-text">${this._t("disable_animation_help")}</div>
       </div>
@@ -7559,52 +7565,52 @@ class EasyAlertCardEditor extends LitElement {
         ${group("controls", "🎛️", "section_card_controls", html`
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_snooze_bar")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_snooze_bar !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, show_snooze_bar: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_snooze_bar")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_snooze_button")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_snooze_button !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, show_snooze_button: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_snooze_button")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_history_button")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_history_button !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, show_history_button: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_history_button")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_counter")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_counter !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, show_counter: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_counter")}</span></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_dismiss_bar")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_dismiss_bar !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, show_dismiss_bar: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_dismiss_bar")}</span></div>
         </div>
       </div>
 
@@ -7626,12 +7632,12 @@ class EasyAlertCardEditor extends LitElement {
       </div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("swipe_to_snooze")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${!!cfg.swipe_to_snooze}"
             @change="${(e) => this._fireConfig({ ...this._config, swipe_to_snooze: e.target.checked || undefined })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("swipe_to_snooze")}</span></div>
         </div>
       </div>
         `)}
@@ -7639,12 +7645,12 @@ class EasyAlertCardEditor extends LitElement {
           <div class="rs-section-title">${this._t("section_tts")}</div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("tts_master_toggle")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.tts_enabled !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, tts_enabled: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("tts_master_toggle")}</span></div>
         </div>
         <div class="helper-text">${this._t("tts_master_toggle_help")}</div>
         <div class="helper-text" style="color:var(--warning-color,#f4a835);margin-top:4px">${this._t("client_side_warning")}</div>
@@ -7653,12 +7659,12 @@ class EasyAlertCardEditor extends LitElement {
           <div class="rs-section-title">${this._t("section_push_notify")}</div>
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("push_notify_master_toggle")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.push_notify_enabled !== false}"
             @change="${(e) => this._fireConfig({ ...this._config, push_notify_enabled: e.target.checked ? undefined : false })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("push_notify_master_toggle")}</span></div>
         </div>
         <div class="helper-text">${this._t("push_notify_master_toggle_help")}</div>
         <div class="helper-text" style="color:var(--warning-color,#f4a835);margin-top:4px">${this._t("client_side_warning")}</div>
@@ -7682,12 +7688,12 @@ class EasyAlertCardEditor extends LitElement {
       ${this._renderSectionHeader("tab_allclear")}
       <div class="form-row">
         <div class="form-row-inline">
-          <ha-formfield .label="${this._t("show_when_clear")}">
+          <div class="eac-ff">
           <ha-checkbox
             .checked="${cfg.show_when_clear === true}"
             @change="${(e) => this._showWhenClearChanged(e.target.checked)}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_when_clear")}</span></div>
         </div>
       </div>
       ${cfg.show_when_clear ? html`
@@ -7755,12 +7761,12 @@ class EasyAlertCardEditor extends LitElement {
         ${(cfg.clear_display_mode === 'clock' || cfg.clear_display_mode === 'weather_clock' || cfg.clear_display_mode === 'weather_forecast') ? html`
           <div class="form-row">
             <div class="switch-row">
-              <ha-formfield .label="${this._t("clear_clock_show_date")}">
+              <div class="eac-ff">
               <ha-checkbox
                 .checked="${cfg.clear_clock_show_date !== false}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_clock_show_date: e.target.checked })}"
               ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_clock_show_date")}</span></div>
             </div>
           </div>
           ${cfg.clear_clock_show_date !== false ? html`
@@ -7778,22 +7784,22 @@ class EasyAlertCardEditor extends LitElement {
           ` : ''}
           <div class="form-row">
             <div class="switch-row">
-              <ha-formfield .label="${this._t("clear_clock_12h")}">
+              <div class="eac-ff">
               <ha-checkbox
                 .checked="${!!cfg.clear_clock_12h}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_clock_12h: e.target.checked })}"
               ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_clock_12h")}</span></div>
             </div>
           </div>
           <div class="form-row">
             <div class="switch-row">
-              <ha-formfield .label="${this._t("clear_clock_show_seconds")}">
+              <div class="eac-ff">
               <ha-checkbox
                 .checked="${cfg.clear_clock_show_seconds !== false}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_clock_show_seconds: e.target.checked })}"
               ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_clock_show_seconds")}</span></div>
             </div>
           </div>
           ${(cfg.clear_display_mode === 'weather_clock' || cfg.clear_display_mode === 'weather_forecast') ? html`
@@ -7884,12 +7890,12 @@ class EasyAlertCardEditor extends LitElement {
           </div>
           <div class="form-row">
             <div class="form-row-inline">
-              <ha-formfield .label="${this._t("clear_disable_animation")}">
+              <div class="eac-ff">
               <ha-checkbox
                 .checked="${!!cfg.clear_disable_animation}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_disable_animation: e.target.checked || undefined })}"
               ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_disable_animation")}</span></div>
             </div>
             <div class="helper-text">${this._t("clear_disable_animation_help")}</div>
           </div>
@@ -7916,18 +7922,18 @@ class EasyAlertCardEditor extends LitElement {
         ${(cfg.clear_display_mode === 'forecast' || cfg.clear_display_mode === 'weather_forecast') ? html`
           <div class="form-row">
             <div class="switch-row">
-              <ha-formfield .label="${this._t("clear_forecast_show_date")}">
+              <div class="eac-ff">
               <ha-checkbox .checked="${cfg.clear_forecast_show_date !== false}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_forecast_show_date: e.target.checked ? undefined : false })}"></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_forecast_show_date")}</span></div>
             </div>
           </div>
           <div class="form-row">
             <div class="switch-row">
-              <ha-formfield .label="${this._t("clear_forecast_show_rain")}">
+              <div class="eac-ff">
               <ha-checkbox .checked="${cfg.clear_forecast_show_rain !== false}"
                 @change="${(e) => this._fireConfig({ ...this._config, clear_forecast_show_rain: e.target.checked ? undefined : false })}"></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("clear_forecast_show_rain")}</span></div>
             </div>
           </div>
           <div class="helper-text">${this._t("clear_forecast_rows_help")}</div>
@@ -7936,12 +7942,12 @@ class EasyAlertCardEditor extends LitElement {
         <!-- Show widget in alert cycle -->
         ${(cfg.clear_display_mode && cfg.clear_display_mode !== 'message') ? html`
         <div class="form-row toggle-row">
-          <ha-formfield .label="${this._t("show_widget_in_cycle")}">
+          <div class="eac-ff">
           <ha-checkbox
             ?checked="${!!cfg.show_widget_in_cycle}"
             @change="${(e) => this._fireConfig({ ...this._config, show_widget_in_cycle: e.target.checked })}"
           ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("show_widget_in_cycle")}</span></div>
         </div>` : ''}
 
         <!-- Message fields (only for message mode) -->
@@ -7961,12 +7967,12 @@ class EasyAlertCardEditor extends LitElement {
           ></ha-input>
         </div>
         <div class="form-row">
-          <ha-formfield .label="${this._t("use_ha_icon")}">
+          <div class="eac-ff">
             <ha-checkbox
               .checked="${!!cfg.clear_use_ha_icon}"
               @change="${(e) => this._clearUseHaIconToggled(e.target.checked)}"
             ></ha-checkbox>
-          </ha-formfield>
+          <span class="eac-ff-label">${this._t("use_ha_icon")}</span></div>
           ${cfg.clear_use_ha_icon ? html`
             <ha-icon-picker
               .label="${this._t("clear_icon_label")}"
@@ -8692,12 +8698,12 @@ class EasyAlertCardEditor extends LitElement {
                 ${this._getAlertMode(index, alert) === "rs_entity" ? html`
                 <!-- on_change toggle (rule-set alerts; single-entity alerts pick "changes" in the condition) -->
                 <div>
-                  <ha-formfield .label="${this._t("on_change")}">
+                  <div class="eac-ff">
                     <ha-checkbox
                       .checked="${!!alert.on_change}"
                       @change="${(e) => this._updateAlert(index, { on_change: e.target.checked || undefined })}"
                     ></ha-checkbox>
-                  </ha-formfield>
+                  <span class="eac-ff-label">${this._t("on_change")}</span></div>
                   <div class="helper-text">${this._t("on_change_help")}</div>
                 </div>
                 ` : ""}
@@ -8770,20 +8776,20 @@ class EasyAlertCardEditor extends LitElement {
                 <!-- Line under the message (multi-entity alerts) -->
                 ${this._getAlertMode(index, alert) !== "entity" ? html`
                   <div class="eac-check-row">
-                    <ha-formfield .label="${this._t(this._getAlertMode(index, alert) === "rs_notify" ? "show_notification_text" : "show_filter_name")}">
+                    <div class="eac-ff">
                       <ha-checkbox .checked="${alert.show_filter_name !== false}"
                         @change="${(e) => this._updateAlert(index, { show_filter_name: e.target.checked ? undefined : false })}"></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t(this._getAlertMode(index, alert) === "rs_notify" ? "show_notification_text" : "show_filter_name")}</span></div>
                     ${this._getAlertMode(index, alert) !== "rs_notify" ? html`
-                    <ha-formfield .label="${this._t("show_filter_state")}">
+                    <div class="eac-ff">
                       <ha-checkbox .checked="${!!alert.show_filter_state}"
                         @change="${(e) => this._updateAlert(index, { show_filter_state: e.target.checked ? true : undefined })}"></ha-checkbox>
-                    </ha-formfield>` : ""}
+                    <span class="eac-ff-label">${this._t("show_filter_state")}</span></div>` : ""}
                     ${_tbase(alert.theme) === "battery" ? html`
-                    <ha-formfield .label="${this._t("battery_trim_name")}">
+                    <div class="eac-ff">
                       <ha-checkbox .checked="${!!alert.battery_trim_name}"
                         @change="${(e) => this._updateAlert(index, { battery_trim_name: e.target.checked ? true : undefined })}"></ha-checkbox>
-                    </ha-formfield>` : ""}
+                    <span class="eac-ff-label">${this._t("battery_trim_name")}</span></div>` : ""}
                   </div>
                   <div class="helper-text">${this._t(this._getAlertMode(index, alert) === "rs_notify" ? "show_notification_text_help" : "show_filter_name_help")}</div>
                 ` : ""}
@@ -8797,7 +8803,7 @@ class EasyAlertCardEditor extends LitElement {
                 </div>
 
                 <!-- Custom card (replaces the alert's look) -->
-                <ha-formfield .label="${this._t("card_override_section")}">
+                <div class="eac-ff">
                   <ha-checkbox .checked="${!!alert.card || !!this._cardOverrideOn?.has(index)}"
                     @change="${(e) => {
                       const n = new Set(this._cardOverrideOn || []);
@@ -8805,7 +8811,7 @@ class EasyAlertCardEditor extends LitElement {
                       this._cardOverrideOn = n;
                       if (!e.target.checked) this._updateAlert(index, { card: undefined }); else this.requestUpdate();
                     }}"></ha-checkbox>
-                </ha-formfield>
+                <span class="eac-ff-label">${this._t("card_override_section")}</span></div>
                 <div class="helper-text">${this._t("card_override_help")}</div>
                 ${alert.card || this._cardOverrideOn?.has(index) ? html`
                 <ha-yaml-editor
@@ -8823,12 +8829,12 @@ class EasyAlertCardEditor extends LitElement {
                 ${_tbase(alert.theme) === 'music' ? html`
                   <div class="section-divider" data-sec="music">🎵 ${this._t("music_player_controls")}</div>
                   <div>
-                    <ha-formfield .label="${this._t("music_player_controls")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${!!alert.show_player_controls}"
                         @change="${(e) => this._updateAlert(index, { show_player_controls: e.target.checked || undefined })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_player_controls")}</span></div>
                     <div class="helper-text">${this._t("music_player_controls_help")}</div>
                   </div>
                   ${alert.show_player_controls ? html`
@@ -8859,68 +8865,68 @@ class EasyAlertCardEditor extends LitElement {
                   ></ha-input>
                   <div class="section-divider" data-sec="music_compact">${this._t("music_compact_layout")}</div>
                   <div>
-                    <ha-formfield .label="${this._t("music_compact_layout")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${!!alert.music_compact_layout}"
                         @change="${(e) => this._updateAlert(index, { music_compact_layout: e.target.checked || undefined })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_compact_layout")}</span></div>
                     ${alert.music_compact_layout ? html`
-                    <ha-formfield .label="${this._t("music_compact_show_badge")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${alert.music_compact_show_badge !== false}"
                         @change="${(e) => this._updateAlert(index, { music_compact_show_badge: e.target.checked ? undefined : false })}"
                       ></ha-checkbox>
-                    </ha-formfield>` : ""}
+                    <span class="eac-ff-label">${this._t("music_compact_show_badge")}</span></div>` : ""}
                   </div>
                   <div class="section-divider" data-sec="music_controls">${this._t("music_player_controls")}</div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_art")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${alert.music_show_art !== false}"
                         @change="${(e) => this._updateAlert(index, { music_show_art: e.target.checked ? undefined : false })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_art")}</span></div>
                   </div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_title")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${alert.music_show_title !== false}"
                         @change="${(e) => this._updateAlert(index, { music_show_title: e.target.checked ? undefined : false })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_title")}</span></div>
                   </div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_artist")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${alert.music_show_artist !== false}"
                         @change="${(e) => this._updateAlert(index, { music_show_artist: e.target.checked ? undefined : false })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_artist")}</span></div>
                   </div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_controls")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${alert.music_show_controls !== false}"
                         @change="${(e) => this._updateAlert(index, { music_show_controls: e.target.checked ? undefined : false })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_controls")}</span></div>
                   </div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_power")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${!!alert.music_show_power}"
                         @change="${(e) => this._updateAlert(index, { music_show_power: e.target.checked || undefined })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_power")}</span></div>
                   </div>
                   <div>
-                    <ha-formfield .label="${this._t("music_show_player_picker")}">
+                    <div class="eac-ff">
                       <ha-checkbox
                         .checked="${!!alert.music_show_player_picker}"
                         @change="${(e) => this._updateAlert(index, { music_show_player_picker: e.target.checked || undefined })}"
                       ></ha-checkbox>
-                    </ha-formfield>
+                    <span class="eac-ff-label">${this._t("music_show_player_picker")}</span></div>
                   </div>
                 ` : ""}
 
@@ -9114,12 +9120,12 @@ class EasyAlertCardEditor extends LitElement {
                     .value="${alert.secondary_attribute || ""}"
                     @change="${(e) => this._updateAlert(index, { secondary_attribute: e.target.value.trim() || undefined })}"
                   ></ha-input>
-                  <ha-formfield .label="${this._t("show_secondary_name")}">
+                  <div class="eac-ff">
                     <ha-checkbox
                       .checked="${!!alert.show_secondary_name}"
                       @change="${(e) => this._updateAlert(index, { show_secondary_name: e.target.checked ? true : undefined })}"
                     ></ha-checkbox>
-                  </ha-formfield>
+                  <span class="eac-ff-label">${this._t("show_secondary_name")}</span></div>
                 ` : ""}
 
                 <!-- Secondary static text -->
@@ -9396,7 +9402,7 @@ class EasyAlertCardEditor extends LitElement {
                             ${this._haUsers.map(u => {
                               const checked = selectedNames.includes(u.name);
                               return html`
-                                <ha-formfield .label="${u.name}${u.is_admin ? " ★" : ""}">
+                                <div class="eac-ff">
                                   <ha-checkbox
                                     ?checked="${checked}"
                                     @change="${(e) => {
@@ -9406,7 +9412,7 @@ class EasyAlertCardEditor extends LitElement {
                                       this._updateAlert(index, { visible_to: names.length === 0 ? undefined : names.length === 1 ? names[0] : names });
                                     }}"
                                   ></ha-checkbox>
-                                </ha-formfield>
+                                <span class="eac-ff-label">${u.name}${u.is_admin ? " ★" : ""}</span></div>
                               `;
                             })}
                           </div>
@@ -9680,9 +9686,9 @@ class EasyAlertCardEditor extends LitElement {
     const fmt = (v) => unit === "×" ? `${Number(v).toFixed(1)}×` : `${v}${unit}`;
     return html`
       <div class="eac-frow eac-frow--nowrap">
-        <ha-formfield .label="${label}">
+        <div class="eac-ff">
           <ha-checkbox .checked="${on}" @change="${(e) => onChange(e.target.checked ? (Number(inherited) > 0 ? Number(inherited) : def) : undefined)}"></ha-checkbox>
-        </ha-formfield>
+        <span class="eac-ff-label">${label}</span></div>
         ${on ? html`<input type="range" class="eac-slider" min="${min}" max="${max}" step="${step}" .value="${String(value)}"
             @input="${(e) => onChange(Number(e.target.value))}" />
           <span class="eac-slider-val">${fmt(value)}</span>`
@@ -9696,9 +9702,9 @@ class EasyAlertCardEditor extends LitElement {
     const changed = value !== undefined && value !== !!inheritedOn;
     return html`
       <div class="eac-frow">
-        <ha-formfield .label="${label}">
+        <div class="eac-ff">
           <ha-checkbox .checked="${on}" @change="${(e) => onChange(e.target.checked === !!inheritedOn ? undefined : e.target.checked)}"></ha-checkbox>
-        </ha-formfield>
+        <span class="eac-ff-label">${label}</span></div>
         <span class="eac-inherit ${changed ? "eac-inherit--changed" : ""}">${this._t("tri_default_note").replace("{v}", this._t(inheritedOn ? "tri_on" : "tri_off"))}</span>
       </div>`;
   }
@@ -10216,9 +10222,9 @@ class EasyAlertCardEditor extends LitElement {
     const on = Array.isArray(rs[key]) && rs[key].includes(value);
     return html`
       <div class="rs-check-row">
-        <ha-formfield .label="${label}">
+        <div class="eac-ff">
           <ha-checkbox .checked="${on}" @change="${(e) => this._rsToggleList(si, key, value, e.target.checked)}"></ha-checkbox>
-        </ha-formfield>
+        <span class="eac-ff-label">${label}</span></div>
         ${extra || ""}
       </div>`;
   }
@@ -10366,9 +10372,9 @@ class EasyAlertCardEditor extends LitElement {
     const setAllMobile = (on) => this._rsDestShortcut(si, "mobile_app", on);
     const setBell = (on) => this._rsDestShortcut(si, "persistent", on);
     const box = (label, checked, disabled, onChange) => html`
-      <ha-formfield .label="${label}" class="${disabled ? "rs-disabled" : ""}">
+      <div class="eac-ff ${disabled ? "rs-disabled" : ""}">
         <ha-checkbox .checked="${checked}" ?disabled="${disabled}" @change="${(e) => onChange(e.target.checked)}"></ha-checkbox>
-      </ha-formfield>`;
+      <span class="eac-ff-label">${label}</span></div>`;
     return html`
       ${!all ? this._rsChips(si, key, (v) => this._destName(v)) : ""}
       ${!all && !picked.length ? html`<div class="rs-warning">⚠ ${this._t("notify_dest_pick_one")}</div>` : ""}
@@ -10493,10 +10499,10 @@ class EasyAlertCardEditor extends LitElement {
           ></ha-input>` : ""}
         ${this._renderRsValue(si, gi, ri, r)}
         ${RS_CASE_OPS.includes(r.op) && !["time", "weekday", "label", "area", "floor", "visibility", "sun"].includes(r.field) ? html`
-          <ha-formfield .label="${this._t("ruleset_match_case")}">
+          <div class="eac-ff">
             <ha-checkbox .checked="${!!r.case_sensitive}"
               @change="${(e) => this._rsRuleChanged(si, gi, ri, { case_sensitive: e.target.checked || undefined, exact: e.target.checked ? r.exact : undefined })}"></ha-checkbox>
-          </ha-formfield>` : ""}
+          <span class="eac-ff-label">${this._t("ruleset_match_case")}</span></div>` : ""}
       </div>
     `;
   }
@@ -11423,24 +11429,24 @@ class EasyAlertCardEditor extends LitElement {
         <div class="helper-text">${this._t("action_pipeline_id_help")}</div>
         <div class="form-row">
           <div class="form-row-inline">
-            <ha-formfield .label="${this._t("action_start_listening")}">
+            <div class="eac-ff">
             <ha-checkbox
               .checked="${cfg.start_listening ?? false}"
               @change="${(e) => this._setCardActionConfig(configKey, "start_listening", e.target.checked)}"
             ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("action_start_listening")}</span></div>
           </div>
         </div>
       ` : ""}
       ${type !== "none" ? html`
         <div class="form-row" style="margin-top:10px">
           <div class="form-row-inline">
-            <ha-formfield .label="${this._t("action_confirmation")}">
+            <div class="eac-ff">
             <ha-checkbox
               .checked="${!!cfg.confirmation}"
               @change="${(e) => this._setCardActionConfirmation(configKey, e.target.checked)}"
             ></ha-checkbox>
-</ha-formfield>
+<span class="eac-ff-label">${this._t("action_confirmation")}</span></div>
           </div>
           <div class="helper-text">${this._t("action_confirmation_help")}</div>
           ${cfg.confirmation ? html`
@@ -12389,6 +12395,10 @@ class EasyAlertCardEditor extends LitElement {
         margin-top: 3px;
         line-height: 1.4;
       }
+      /* Control + label row. Replaces ha-formfield, which Home Assistant removed from its
+         frontend in 2026.11, leaving every toggle and checkbox without a label (#246 upstream). */
+      .eac-ff { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+      .eac-ff-label { font-size: 0.9rem; line-height: 1.3; color: var(--primary-text-color, #212121); cursor: pointer; }
       .overlay-test-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 4px; }
       .overlay-test-row .helper-text { flex: 1; min-width: 180px; margin: 0; }
       .overlay-preview-wrap {

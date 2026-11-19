@@ -3,7 +3,7 @@
  * Based on AlertTicker Card by djdevil (MIT) — https://github.com/djdevil/AlertTicker-Card
  * https://github.com/Ltek/easy-alert-card
  */
-// Version: v2026.11.17.55
+// Version: v2026.11.19.56
 // ---------------------------------------------------------------------------
 // LitElement bootstrap — resolves against the running HA instance
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ const css = LitElement.prototype.css ?? ((strings, ...values) => {
 // ---------------------------------------------------------------------------
 // Card version — declared early so getConfigElement() can reference it
 // ---------------------------------------------------------------------------
-const CARD_VERSION = "2026.11.17.55";
+const CARD_VERSION = "2026.11.19.56";
 
 // ---------------------------------------------------------------------------
 // Moving from AlertTicker Card: copy its saved browser state once (snoozes,
@@ -2916,14 +2916,36 @@ const _ATC_OVERLAY = (() => {
     });
   }
 
-  function _evalAlert(hass, a, prevMap) {
+  // on_change alerts (#245 upstream): a state change shows on one watcher check only, so
+  // the next check (2 s later) saw the alert as cleared and hid the banner. The moment of
+  // the change is remembered and the alert stays active for auto_dismiss_after seconds, or,
+  // without it, until the banner is closed (overlay duration when it can't be closed).
+  const _ovChangeAt = new Map(); // "cardId:i" → ms
+  function _ovClearChanges(id) { for (const k of [..._ovChangeAt.keys()]) if (k.startsWith(id + ":")) _ovChangeAt.delete(k); }
+  function _evalAlert(hass, a, prevMap, id, i, cfg) {
     if (!a.entity && !_atcIsFilterAlert(a)) return false;
     if (a.on_change && a.entity) {
       if (a.enabled === false || !_evalVisibleTo(hass, a) || !_evalTimeRange(a)) return false;
       const key = a.entity + (a.attribute || "");
       const cur  = _getVal(hass, a.entity, a.attribute);
       const prev = prevMap.get(key);
-      return cur != null && prev !== undefined && cur !== prev;
+      const changed = cur != null && prev !== undefined && cur !== prev;
+      if (id == null) return changed;
+      const ck = id + ":" + i;
+      if (changed) {
+        _ovChangeAt.set(ck, Date.now());
+        _bases.get(id)?.delete(i);                       // a new change shows the banner again
+        _rotDone.get(id)?.delete("e:" + a.entity + ":" + i);
+      }
+      const at = _ovChangeAt.get(ck);
+      if (at == null) return false;
+      let ttl = Number(a.auto_dismiss_after) > 0 ? Number(a.auto_dismiss_after) : null;
+      if (ttl == null && cfg?.overlay_dismissible === false) {
+        const d = cfg.overlay_duration != null ? Number(cfg.overlay_duration) : 8;
+        ttl = d > 0 ? d : 8;
+      }
+      if (ttl != null && Date.now() - at >= ttl * 1000) { _ovChangeAt.delete(ck); return false; }
+      return true;
     }
     return _atcAlertMatches(hass, a, _ovCtx(hass)).length > 0;
   }
@@ -3050,7 +3072,7 @@ const _ATC_OVERLAY = (() => {
         const curActive = new Set();
         reg.alerts.forEach((a, i) => {
           try {
-            if (!_evalAlert(hass, a, prevMap)) {
+            if (!_evalAlert(hass, a, prevMap, id, i, reg.config)) {
               // Condition false — cancel any pending trigger_delay
               const dk = id + ":" + i;
               if (_ovDelayTimers.has(dk)) { clearTimeout(_ovDelayTimers.get(dk)); _ovDelayTimers.delete(dk); }
@@ -3389,13 +3411,13 @@ const _ATC_OVERLAY = (() => {
           // A copy restored from storage (#222) belongs to a card that may not be mounted
           // this session: drop it only when this card is that card (same alerts).
           if (oreg.restored) {
-            if (ofp === fp) { _regs.delete(oid); _prevS.delete(oid); _bases.delete(oid); _filterNotified.delete(oid); }
+            if (ofp === fp) { _regs.delete(oid); _prevS.delete(oid); _bases.delete(oid); _filterNotified.delete(oid); _ovClearChanges(oid); }
             continue;
           }
           const isOrphan   = !oreg.disconnected;       // never called detach() — leftover
           const isSameSlot = oreg.disconnected && ofp === fp; // same card remounting
           if (isOrphan || isSameSlot) {
-            _regs.delete(oid); _prevS.delete(oid); _bases.delete(oid); _filterNotified.delete(oid);
+            _regs.delete(oid); _prevS.delete(oid); _bases.delete(oid); _filterNotified.delete(oid); _ovClearChanges(oid);
           }
         }
         // If the alerts array changed (entity set or order), reset state so stale
@@ -3404,7 +3426,7 @@ const _ATC_OVERLAY = (() => {
         if (existing) {
           const oldSig = (existing.alerts || []).map((a, i) => i + ":" + _atcAlertKey(a)).join("|");
           const newSig = (alerts || []).map((a, i) => i + ":" + _atcAlertKey(a)).join("|");
-          if (oldSig !== newSig) { _bases.delete(id); _prevS.delete(id); _filterNotified.delete(id); _rotDone.delete(id); }
+          if (oldSig !== newSig) { _bases.delete(id); _prevS.delete(id); _filterNotified.delete(id); _rotDone.delete(id); _ovClearChanges(id); }
         }
         const restored = !element; // only the module-load restore passes no element
         _regs.set(id, { alerts: alerts || [], config, lang, element, disconnected: false,
@@ -7350,13 +7372,17 @@ class EasyAlertCard extends LitElement {
     }
 
     const secondaryEl = this._renderSecondaryValue(alert);
+    // icon_image / use_entity_picture replace the drawn battery; level, bar and colors stay (#247 upstream)
+    const customPic = alert.icon_image ||
+      (alert.use_entity_picture && this._hass?.states[alert.entity]?.attributes?.entity_picture);
 
     return html`
       <div class="at-battery3d" style="--b3d-color:${color};--b3d-color-light:${colorLight};--b3d-level:${levelPct}%">
+        ${customPic ? html`<div class="b3d-img-icon">${this._getIcon(alert)}</div>` : html`
         <div class="b3d-icon">
           <div class="b3d-fill"></div>
           ${isCharging ? html`<div class="b3d-bolt">⚡</div>` : ""}
-        </div>
+        </div>`}
         <div class="b3d-content">
           <div class="b3d-badge">${label}${isCharging ? html` <span class="b3d-charging">⚡ Charging</span>` : ""}</div>
           <div class="b3d-title">${this._resolveMessage(alert)}</div>
@@ -10410,6 +10436,7 @@ class EasyAlertCard extends LitElement {
         border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;
         position: relative;
       }
+      .b3d-img-icon { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
       .b3d-icon {
         position: relative; flex-shrink: 0;
         width: 56px; height: 28px;
